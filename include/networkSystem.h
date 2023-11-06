@@ -1,0 +1,41 @@
+#ifndef NETWORKSYSTEM_H
+#define NETWORKSYSTEM_H
+
+#include <iostream>
+#include <string>
+#include <types/uploadTypeEnumType.h>
+#include <types/responsePairType.h>
+#include "json.hpp"
+#include <3ds.h>
+#include <types/menuItemsType.h>
+
+class NetworkSystem
+{
+public:
+    NetworkSystem(); //
+
+    std::string getTokenFromShorthandToken(std::string shorthandToken);
+    std::string verifyTokenToSetUserID(std::string fullToken);
+
+    int upload(UploadTypeEnum uploadType, std::string filePath, std::string base64Data);
+
+    void cleanExit();
+
+    responsePair init(std::string serverAddress, std::string token);
+    menuItems getGamesMenuItems(UploadTypeEnum type);
+    menuItems getSavesMenuItems(UploadTypeEnum type, std::string gameID);
+    std::string getBase64StringFromFile(std::string fullFilePath, std::string filename);
+    void download(UploadTypeEnum type, std::string gameID, std::string saveID, std::filesystem::path gamePath);
+    
+
+private:
+    std::string serverAddress;
+    std::string token;
+
+    Result http_post(const char *url, const char *data, responsePair *response = nullptr, std::filesystem::path downloadPath = "");
+    responsePair sendRequest(std::string address, nlohmann::json *dataToSend = nullptr); //
+
+    void setTokenFromString(std::string token);
+};
+
+#endif // NETWORKSYSTEM_H

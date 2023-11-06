@@ -1,0 +1,12 @@
+bin/
+build/
+lib/
+.*/
+*.3dsx
+*.smdh
+*.elf
+*.t3x
+*.bcfnt
+*~.DS_Store
+*.lst
+run.sh
