@@ -10,3 +10,4 @@ lib/
 *~.DS_Store
 *.lst
 run.sh
+.DS_Store
