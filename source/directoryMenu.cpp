@@ -80,7 +80,7 @@ menuItems DirectoryMenu::getSaveSelectionMenuItems(std::filesystem::path gamePat
         if (std::filesystem::is_directory(dirEntry.path()))
         {
             std::filesystem::path relativePath = std::filesystem::relative(dirEntry, gamePath);
-            saveSelectionMenuItems.push_back({relativePath, menuFunctions::uploadSave});
+            saveSelectionMenuItems.push_back({relativePath, menuFunctions::uploadGame});
         }
     }
 

@@ -23,9 +23,8 @@ public:
 
     responsePair init(std::string serverAddress, std::string token);
     menuItems getGamesMenuItems(UploadTypeEnum type);
-    menuItems getSavesMenuItems(UploadTypeEnum type, std::string gameID);
     std::string getBase64StringFromFile(std::string fullFilePath, std::string filename);
-    void download(UploadTypeEnum type, std::string gameID, std::string saveID, std::filesystem::path gamePath);
+    void download(UploadTypeEnum type, std::string gameID, std::filesystem::path gamePath);
     
 
 private:

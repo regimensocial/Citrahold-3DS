@@ -273,7 +273,7 @@ void SystemCore::handleInput()
             break;
         }
 
-        case menuFunctions::uploadSave:
+        case menuFunctions::uploadGame:
         {
 
             nlohmann::json gameIDJSON = configManager.getGameIDFile(currentUploadType);
@@ -293,7 +293,7 @@ void SystemCore::handleInput()
                     {
                         // This entry is a file, process it
                         std::filesystem::path fullPath = dirEntry.path();
-                        std::filesystem::path relativePath = std::filesystem::relative(dirEntry, gamePath);
+                        std::filesystem::path relativePath = std::filesystem::relative(dirEntry, savePath);
 
                         responsePair theResponse;
 
@@ -323,30 +323,25 @@ void SystemCore::handleInput()
         
         case menuFunctions::downloadExtdataMenuItems:
         {
-            currentGameID = std::get<0>(downloadGameMenuItems[selection]);
             currentUploadType = UploadTypeEnum::EXTDATA;
             downloadGameMenuItems = networkSystem.getGamesMenuItems(UploadTypeEnum::EXTDATA);
             menuSystem.changeMenu(selection, currentMenuItems, downloadGameMenuItems, previousMenus, 1, false);
             break;
         }
 
-        case menuFunctions::downloadSaveMenuItems: {
-            currentGameID = std::get<0>(downloadGameMenuItems[selection]);
-            downloadSaveMenuItems = networkSystem.getSavesMenuItems(currentUploadType, std::get<0>(downloadGameMenuItems[selection]));
-            menuSystem.changeMenu(selection, currentMenuItems, downloadSaveMenuItems, previousMenus, 1, false);
 
-            break;
-        }
-
-        case menuFunctions::downloadSave: {
+        case menuFunctions::downloadGame: {
             nlohmann::json gameIDJSON = configManager.getGameIDFile(currentUploadType);
+            
+            currentGameID = std::get<0>(downloadGameMenuItems[selection]);
+
             std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
             if (gamePath == "")
             {
                 std::cout << "I need you to register this game as " << currentGameID << " before you download this save" << std::endl;
                 break;
             }
-            networkSystem.download(currentUploadType, currentGameID, std::get<0>(downloadSaveMenuItems[selection]), gamePath);
+            networkSystem.download(currentUploadType, currentGameID, gamePath);
             
             break;
         }
@@ -447,10 +442,6 @@ void SystemCore::sceneRender()
     else if (menuSystem.getCurrentMenuItems() == &downloadGameMenuItems)
     {
         str += "Select a game to download\n";
-    }
-    else if (menuSystem.getCurrentMenuItems() == &downloadSaveMenuItems)
-    {
-        str += "Select a save to download\n";
     }
     menuItems renderMenuItems = *currentMenuItems;
 
@@ -608,7 +599,6 @@ void SystemCore::cleanExit()
     gameIDMenuItems.clear();
     saveSelectionMenuItems.clear();
     downloadGameMenuItems.clear();
-    downloadSaveMenuItems.clear();
 
     networkSystem.cleanExit();
 

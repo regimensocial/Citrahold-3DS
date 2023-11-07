@@ -21,11 +21,10 @@ enum class menuFunctions
     gameIDSavesMenuItems,
     gameIDExtdataMenuItems,
     saveSelectionMenuItems,
-    uploadSave,
+    uploadGame,
     downloadSavesMenuItems,
     downloadExtdataMenuItems,
-    downloadSaveMenuItems,
-    downloadSave,
+    downloadGame,
     resetGameIDFiles
 };
 

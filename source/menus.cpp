@@ -44,8 +44,3 @@ menuItems downloadGameMenuItems = {
     {"loading", menuFunctions::noAction},
     {"Cancel ", menuFunctions::changeToPreviousMenu}
 };
-
-menuItems downloadSaveMenuItems = {
-    {"loading", menuFunctions::noAction},
-    {"Cancel ", menuFunctions::changeToPreviousMenu}
-};

@@ -15,6 +15,5 @@ extern menuItems loadingMenuItems;
 extern menuItems gameIDMenuItems;
 extern menuItems saveSelectionMenuItems;
 extern menuItems downloadGameMenuItems;
-extern menuItems downloadSaveMenuItems;
 
 #endif

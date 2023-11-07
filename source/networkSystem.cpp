@@ -50,12 +50,11 @@ std::string NetworkSystem::getBase64StringFromFile(std::string fullFilePath, std
 	return "";
 }
 
-void NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::string saveID, std::filesystem::path gamePath)
+void NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::filesystem::path gamePath)
 {
 	nlohmann::json data;
 	data["token"] = this->token;
 	data["game"] = gameID;
-	data["save"] = saveID;
 
 	responsePair response = sendRequest(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves"), &data);
 	if (response.first == 200)
@@ -71,9 +70,9 @@ void NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::strin
 				(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves")).c_str(),
 				data.dump().c_str(),
 				&newResponse,
-				(gamePath / saveID) / element.value());
+				(gamePath / "Citrahold-Download") / element.value());
 
-			std::cout << ((gamePath / saveID) / element.value()).string() << std::endl;
+			std::cout << ((gamePath / "Citrahold-Download") / element.value()).string() << std::endl;
 			std::cout << newResponse.first << std::endl;
 		}
 	}
@@ -94,7 +93,7 @@ menuItems NetworkSystem::getGamesMenuItems(UploadTypeEnum type)
 		for (const auto &element : responseJSON["games"].items())
 		{
 			gamesMenuItems.push_back(
-				{element.value(), menuFunctions::downloadSaveMenuItems});
+				{element.value(), menuFunctions::downloadGame});
 		}
 
 		return gamesMenuItems;
@@ -103,30 +102,6 @@ menuItems NetworkSystem::getGamesMenuItems(UploadTypeEnum type)
 	return {};
 }
 
-menuItems NetworkSystem::getSavesMenuItems(UploadTypeEnum type, std::string gameID)
-{
-
-	nlohmann::json data;
-	data["token"] = this->token;
-	data["game"] = gameID;
-
-	responsePair response = sendRequest(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/getExtdata" : "/getSaves"), &data);
-	if (response.first == 200)
-	{
-
-		nlohmann::json responseJSON = nlohmann::json::parse(response.second);
-		menuItems savesMenuItems = {};
-		for (const auto &element : responseJSON["saves"].items())
-		{
-			savesMenuItems.push_back(
-				{element.value(), menuFunctions::downloadSave});
-		}
-
-		return savesMenuItems;
-	}
-
-	return {};
-}
 
 Result NetworkSystem::http_post(const char *url, const char *data, responsePair *response, std::filesystem::path downloadPath)
 {
