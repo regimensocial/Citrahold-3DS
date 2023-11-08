@@ -24,7 +24,7 @@ menuItems DirectoryMenu::getCurrentDirectoryMenuItems()
     // loop through all DIRECTORIES only in currentDirectory
 
     menuItems directoryMenuItems = {
-        {std::filesystem::path(".. "), menuFunctions::specialDirectory},
+        {std::filesystem::path(".. "), menuFunctions::traverseDirectory},
     };
 
     for (const auto &dirEntry : std::filesystem::directory_iterator(currentDirectory))
@@ -33,7 +33,7 @@ menuItems DirectoryMenu::getCurrentDirectoryMenuItems()
         if (std::filesystem::is_directory(dirEntry.path()))
         {
             std::filesystem::path relativePath = std::filesystem::relative(dirEntry, currentDirectory);
-            directoryMenuItems.push_back({relativePath, menuFunctions::specialDirectory});
+            directoryMenuItems.push_back({relativePath, menuFunctions::traverseDirectory});
         }
     }
 

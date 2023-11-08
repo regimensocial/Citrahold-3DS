@@ -87,38 +87,105 @@ void SystemCore::checkServerConnection()
     }
 }
 
-void SystemCore::handleInput()
+void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 {
-    hidScanInput();
-
-    // get volume slider value
-    u8 volume;
-    HIDUSER_GetSoundVolume(&volume);
-    size = 0.6f * (1.0f - volume / 63.0f);
-
-    // Respond to user input
-    u32 kDown = hidKeysDown();
-    // u32 kHeld = hidKeysHeld();
-    if (kDown & KEY_START)
-        halt = true; // break in order to return to hbmenu
-
-    if (kDown & KEY_UP)
-        if (selection <= 0)
-            selection = (*currentMenuItems).size() - 1;
-        else
-            selection--;
-    else if (kDown & KEY_DOWN)
+    switch (key)
     {
-        if (selection + 1 >= (int)(*currentMenuItems).size())
-            selection = 0;
+
+    case (KEY_B):
+    {
+        if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
+        {
+
+            handleFunction(menuFunctions::specialB_goPreviousDirectory);
+        }
         else
-            selection++;
+        {
+            menuSystem.goToPreviousMenu(selection, currentMenuItems, previousMenus);
+        }
+        break;
     }
 
-    if (kDown & KEY_A)
+    case (KEY_X):
     {
-        switch (std::get<1>((*currentMenuItems)[selection]))
+        if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
         {
+
+            menuSystem.changeMenu(selection, currentMenuItems, gameIDDirectoryMenuItems, previousMenus, true);
+        }
+        break;
+    }
+
+    case (KEY_Y):
+    {
+        if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
+        {
+            handleFunction(menuFunctions::specialY_enterGameID);
+        }
+        break;
+    }
+
+    case (KEY_LEFT):
+    {
+        if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
+        {
+            handleFunction(menuFunctions::specialB_goPreviousDirectory);
+        }
+        break;
+    }
+
+    case (KEY_RIGHT):
+    {
+        if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
+        {
+            handleFunction(menuFunctions::traverseDirectory);
+        }
+        break;
+    }
+
+    default:
+    {
+        switch (function)
+        {
+
+        case menuFunctions::specialB_goPreviousDirectory:
+        {
+            std::filesystem::path newDirectory = directoryMenu.getCurrentDirectory().parent_path();
+            directoryMenu.setCurrentDirectory(newDirectory);
+            uploadDirectoryMenuItems = directoryMenu.getCurrentDirectoryMenuItems();
+            menuSystem.changeMenu(selection, currentMenuItems, uploadDirectoryMenuItems, previousMenus, true);
+            break;
+        }
+
+        case menuFunctions::specialY_enterGameID:
+        {
+            if (directoryMenu.getCurrentDirectory() != "/" && directoryMenu.getCurrentDirectory() != "" && directoryMenu.getCurrentDirectory() != "/3ds" && directoryMenu.getCurrentDirectory() != "/Nintendo 3DS")
+            {
+
+                std::string gameID = openKeyboard("Enter a game ID (this must EXACTLY match your PC one)", std::get<0>(uploadDirectoryMenuItems[selection]));
+                if (gameID != "")
+                {
+                    // we need to add [gameID, path] to "gameID" of configManager.getGameIDFile()
+
+                    UploadTypeEnum uploadType = UploadTypeEnum::SAVES;
+                    if (directoryMenu.getCurrentDirectory().string().find("extdata") != std::string::npos)
+                    {
+                        uploadType = UploadTypeEnum::EXTDATA;
+                    }
+
+                    nlohmann::json oldGameIDFile = configManager.getGameIDFile(uploadType);
+                    nlohmann::json newEntry = nlohmann::json::array();
+                    newEntry.push_back(gameID);
+                    newEntry.push_back(directoryMenu.getCurrentDirectory());
+                    oldGameIDFile["gameID"].push_back(newEntry);
+
+                    // check if that directory contains extdata or save data
+
+                    configManager.updateGameIDFile(uploadType, oldGameIDFile);
+                }
+            }
+            break;
+        }
 
         case menuFunctions::gameIDDirectoryMenuItems:
         {
@@ -251,7 +318,7 @@ void SystemCore::handleInput()
             break;
         }
 
-        case menuFunctions::specialDirectory:
+        case menuFunctions::traverseDirectory:
         {
             std::filesystem::path newDirectory = directoryMenu.getCurrentDirectory() / std::get<0>(uploadDirectoryMenuItems[selection]);
             if (selection == 0)
@@ -362,7 +429,7 @@ void SystemCore::handleInput()
         case menuFunctions::existingGameIDExtdataMenuItems:
         {
             nlohmann::json gameIDJSON = configManager.getGameIDFile(UploadTypeEnum::EXTDATA);
-            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON, menuFunctions::specialAlterGameID);
+            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON, menuFunctions::alterGameID);
 
             if (gameIDMenuItems.size() == 0)
             {
@@ -380,7 +447,7 @@ void SystemCore::handleInput()
         case menuFunctions::existingGameIDSavesMenuItems:
         {
             nlohmann::json gameIDJSON = configManager.getGameIDFile(UploadTypeEnum::SAVES);
-            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON, menuFunctions::specialAlterGameID);
+            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON, menuFunctions::alterGameID);
 
             if (gameIDMenuItems.size() == 0)
             {
@@ -409,78 +476,63 @@ void SystemCore::handleInput()
 
             // Add more cases for other menu functions if needed
         }
+
+        break;
     }
-
-    if (kDown & KEY_X)
-    {
-        if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
-        {
-            menuSystem.changeMenu(selection, currentMenuItems, gameIDDirectoryMenuItems, previousMenus, true);
-        }
     }
+}
 
-    if (kDown & KEY_Y)
-    {
-        if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
-        {
-            if (directoryMenu.getCurrentDirectory() != "/" && directoryMenu.getCurrentDirectory() != "" && directoryMenu.getCurrentDirectory() != "/3ds" && directoryMenu.getCurrentDirectory() != "/Nintendo 3DS")
-            {
+void SystemCore::handleInput()
+{
+    hidScanInput();
 
-                std::string gameID = openKeyboard("Enter a game ID (this must EXACTLY match your PC one)", std::get<0>(uploadDirectoryMenuItems[selection]));
-                if (gameID != "")
-                {
-                    // we need to add [gameID, path] to "gameID" of configManager.getGameIDFile()
+    // get volume slider value
+    u8 volume;
+    HIDUSER_GetSoundVolume(&volume);
+    size = 0.6f * (1.0f - volume / 63.0f);
 
-                    UploadTypeEnum uploadType = UploadTypeEnum::SAVES;
-                    if (directoryMenu.getCurrentDirectory().string().find("extdata") != std::string::npos)
-                    {
-                        uploadType = UploadTypeEnum::EXTDATA;
-                    }
+    // Respond to user input
+    u32 kDown = hidKeysDown();
+    // u32 kHeld = hidKeysHeld();
+    if (kDown & KEY_START)
+        halt = true; // break in order to return to hbmenu
 
-                    nlohmann::json oldGameIDFile = configManager.getGameIDFile(uploadType);
-                    nlohmann::json newEntry = nlohmann::json::array();
-                    newEntry.push_back(gameID);
-                    newEntry.push_back(directoryMenu.getCurrentDirectory());
-                    oldGameIDFile["gameID"].push_back(newEntry);
-
-                    // check if that directory contains extdata or save data
-
-                    configManager.updateGameIDFile(uploadType, oldGameIDFile);
-                }
-            }
-        }
-    }
-
-    // if (kDown & KEY_RIGHT) {
-    //     if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
-    //     { 
-    //         // FUTURE HANDLE TRAVERSE, LIKE WHEN A PRESSED
-    //     }
-    // }
-
-    // if (kDown & KEY_LEFT) {
-    //     if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
-    //     { 
-    //         // FUTURE HANDLE GOING BACJ
-    //     }
-    // }
-
-    
-
-    if (kDown & KEY_B)
-    {
-        if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
-        {
-
-            std::filesystem::path newDirectory = directoryMenu.getCurrentDirectory().parent_path();
-            directoryMenu.setCurrentDirectory(newDirectory);
-            uploadDirectoryMenuItems = directoryMenu.getCurrentDirectoryMenuItems();
-            menuSystem.changeMenu(selection, currentMenuItems, uploadDirectoryMenuItems, previousMenus, true);
-        }
+    if (kDown & KEY_UP)
+        if (selection <= 0)
+            selection = (*currentMenuItems).size() - 1;
         else
-        {
-            menuSystem.goToPreviousMenu(selection, currentMenuItems, previousMenus);
-        }
+            selection--;
+    else if (kDown & KEY_DOWN)
+    {
+        if (selection + 1 >= (int)(*currentMenuItems).size())
+            selection = 0;
+        else
+            selection++;
+    }
+
+    if (kDown & KEY_A)
+    {
+        handleFunction(std::get<1>((*currentMenuItems)[selection]), KEY_A);
+    }
+    else if (kDown & KEY_B)
+    {
+        handleFunction(std::get<1>((*currentMenuItems)[selection]), KEY_B);
+    }
+    else if (kDown & KEY_X)
+    {
+        handleFunction(std::get<1>((*currentMenuItems)[selection]), KEY_X);
+    }
+    else if (kDown & KEY_Y)
+    {
+        handleFunction(std::get<1>((*currentMenuItems)[selection]), KEY_Y);
+    }
+    else if (kDown & KEY_RIGHT)
+    {
+        handleFunction(std::get<1>((*currentMenuItems)[selection]), KEY_RIGHT);
+    }
+    else if (kDown & KEY_LEFT)
+    {
+        handleFunction(std::get<1>((*currentMenuItems)[selection]), KEY_LEFT);
     }
 }
 
@@ -497,12 +549,14 @@ void SystemCore::sceneRender()
     {
         pointerSymbol = ">";
         str += std::string(directoryMenu.getCurrentDirectory()) + "\n";
-    } else if (menuSystem.getCurrentMenuItems() == &existingGameIDsMenuItems)
+    }
+    else if (menuSystem.getCurrentMenuItems() == &existingGameIDsMenuItems)
     {
         pointerSymbol = ">";
         std::string currentType = (currentUploadType == UploadTypeEnum::EXTDATA) ? "extdata" : "saves";
         str += "Current " + currentType + " game IDs" + "\n";
-    } else if (menuSystem.getHeader(currentMenuItems) != nullptr)
+    }
+    else if (menuSystem.getHeader(currentMenuItems) != nullptr)
         str += *(menuSystem.getHeader(currentMenuItems)) + "\n";
 
     menuItems renderMenuItems = *currentMenuItems;
@@ -534,7 +588,6 @@ void SystemCore::sceneRender()
     }
 
     str += pointerSymbol;
-    
 
     for (size_t i = 0; i < ((renderMenuItems).size() - selection); i++)
     {

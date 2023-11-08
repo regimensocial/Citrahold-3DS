@@ -16,8 +16,8 @@ class SystemCore
 public:
     SystemCore();
 
+    void handleFunction(menuFunctions function, unsigned int key = 0);
     void handleInput();
-    void handleKeyboard();
 
     std::string openKeyboard(std::string placeholder = "", std::string initialText = "");
 

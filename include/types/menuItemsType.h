@@ -28,9 +28,6 @@ enum class menuFunctions
 
     changeToPreviousMenu,
 
-    specialAlterGameID,
-    specialDirectory,
-
     // Settings menu items
     inputToken,
     checkServerConnection,
@@ -43,6 +40,15 @@ enum class menuFunctions
     // Not used currently
     openKeyboard,
     changeServerAddress,
+
+
+
+    alterGameID,
+    traverseDirectory,
+    
+    specialB_goPreviousDirectory,
+    specialX_exitDirectorySelection,
+    specialY_enterGameID,
 };
 
 using menuItems = std::vector<std::tuple<std::string, menuFunctions>>;
