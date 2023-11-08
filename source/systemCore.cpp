@@ -119,19 +119,26 @@ void SystemCore::handleInput()
     {
         switch (std::get<1>((*currentMenuItems)[selection]))
         {
-        case menuFunctions::upload:
+
+        case menuFunctions::gameIDDirectoryMenuItems:
+        {
+            menuSystem.changeMenu(selection, currentMenuItems, gameIDDirectoryMenuItems, previousMenus);
+            break;
+        }
+
+        case menuFunctions::uploadMenuItems:
             menuSystem.changeMenu(selection, currentMenuItems, uploadMenuItems, previousMenus);
             break;
 
-        case menuFunctions::download:
+        case menuFunctions::downloadMenuItems:
             menuSystem.changeMenu(selection, currentMenuItems, downloadMenuItems, previousMenus);
             break;
 
-        case menuFunctions::settings:
+        case menuFunctions::settingsMenuItems:
             menuSystem.changeMenu(selection, currentMenuItems, settingMenuItems, previousMenus);
             break;
 
-        case menuFunctions::changeToMainMenu:
+        case menuFunctions::mainMenuMenuItems:
             menuSystem.changeMenu(selection, currentMenuItems, mainMenuItems, previousMenus);
             break;
 
@@ -203,7 +210,7 @@ void SystemCore::handleInput()
 
             uploadDirectoryMenuItems = directoryMenu.getCurrentDirectoryMenuItems();
 
-            menuSystem.changeMenu(selection, currentMenuItems, uploadDirectoryMenuItems, previousMenus, 1, false);
+            menuSystem.changeMenu(selection, currentMenuItems, uploadDirectoryMenuItems, previousMenus, false);
 
             break;
         }
@@ -212,7 +219,7 @@ void SystemCore::handleInput()
         {
 
             nlohmann::json gameIDJSON = configManager.getGameIDFile(UploadTypeEnum::SAVES);
-            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON);
+            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON, menuFunctions::saveSelectionMenuItems);
 
             if (gameIDMenuItems.size() == 0)
             {
@@ -221,7 +228,7 @@ void SystemCore::handleInput()
             }
 
             currentUploadType = UploadTypeEnum::SAVES;
-            menuSystem.changeMenu(selection, currentMenuItems, gameIDMenuItems, previousMenus, 1, false);
+            menuSystem.changeMenu(selection, currentMenuItems, gameIDMenuItems, previousMenus, false);
 
             break;
         }
@@ -230,7 +237,7 @@ void SystemCore::handleInput()
         {
 
             nlohmann::json gameIDJSON = configManager.getGameIDFile(UploadTypeEnum::EXTDATA);
-            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON);
+            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON, menuFunctions::saveSelectionMenuItems);
 
             if (gameIDMenuItems.size() == 0)
             {
@@ -239,29 +246,24 @@ void SystemCore::handleInput()
             }
 
             currentUploadType = UploadTypeEnum::EXTDATA;
-            menuSystem.changeMenu(selection, currentMenuItems, gameIDMenuItems, previousMenus, 1, false);
+            menuSystem.changeMenu(selection, currentMenuItems, gameIDMenuItems, previousMenus, false);
 
             break;
         }
 
-        case menuFunctions::noAction:
-            if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
+        case menuFunctions::specialDirectory:
+        {
+            std::filesystem::path newDirectory = directoryMenu.getCurrentDirectory() / std::get<0>(uploadDirectoryMenuItems[selection]);
+            if (selection == 0)
             {
-                std::filesystem::path newDirectory = directoryMenu.getCurrentDirectory() / std::get<0>(uploadDirectoryMenuItems[selection]);
-                if (selection == 0)
-                {
-                    newDirectory = directoryMenu.getCurrentDirectory().parent_path();
-                }
-
-                directoryMenu.setCurrentDirectory(newDirectory);
-                uploadDirectoryMenuItems = directoryMenu.getCurrentDirectoryMenuItems();
-                menuSystem.changeMenu(selection, currentMenuItems, uploadDirectoryMenuItems, previousMenus, 1, true);
-            }
-            else if (menuSystem.getCurrentMenuItems() == &gameIDMenuItems)
-            {
+                newDirectory = directoryMenu.getCurrentDirectory().parent_path();
             }
 
+            directoryMenu.setCurrentDirectory(newDirectory);
+            uploadDirectoryMenuItems = directoryMenu.getCurrentDirectoryMenuItems();
+            menuSystem.changeMenu(selection, currentMenuItems, uploadDirectoryMenuItems, previousMenus, true);
             break;
+        }
 
         case menuFunctions::saveSelectionMenuItems:
         {
@@ -269,7 +271,7 @@ void SystemCore::handleInput()
             currentGameID = std::get<0>(gameIDMenuItems[selection]);
             std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
             saveSelectionMenuItems = directoryMenu.getSaveSelectionMenuItems(gamePath);
-            menuSystem.changeMenu(selection, currentMenuItems, saveSelectionMenuItems, previousMenus, 1, false);
+            menuSystem.changeMenu(selection, currentMenuItems, saveSelectionMenuItems, previousMenus, false);
             break;
         }
 
@@ -295,15 +297,23 @@ void SystemCore::handleInput()
                         std::filesystem::path fullPath = dirEntry.path();
                         std::filesystem::path relativePath = std::filesystem::relative(dirEntry, savePath);
 
-                        responsePair theResponse;
-
-                        networkSystem.upload(currentUploadType, currentGameID / relativePath, networkSystem.getBase64StringFromFile(fullPath.string(), relativePath.string()));
-
-                        prevStatus = theResponse.first;
+                        prevStatus = networkSystem.upload(currentUploadType, currentGameID / relativePath, networkSystem.getBase64StringFromFile(fullPath.string(), relativePath.string()));
+                        std::cout << "HTTP " << prevStatus << std::endl;
                     }
                 }
 
-                printf("Upload has finished...?\n");
+                if (prevStatus == 201 || prevStatus == 200)
+                {
+                    std::cout << "Upload successful" << std::endl;
+                }
+                else if (prevStatus == 0)
+                {
+                    std::cout << "Upload failed. Is there anything to upload? (or could network be offline?)" << std::endl;
+                }
+                else
+                {
+                    std::cout << "Upload failed" << std::endl;
+                }
             }
             catch (std::filesystem::filesystem_error &e)
             {
@@ -317,22 +327,22 @@ void SystemCore::handleInput()
         {
             currentUploadType = UploadTypeEnum::SAVES;
             downloadGameMenuItems = networkSystem.getGamesMenuItems(UploadTypeEnum::SAVES);
-            menuSystem.changeMenu(selection, currentMenuItems, downloadGameMenuItems, previousMenus, 1, false);
+            menuSystem.changeMenu(selection, currentMenuItems, downloadGameMenuItems, previousMenus, false);
             break;
         }
-        
+
         case menuFunctions::downloadExtdataMenuItems:
         {
             currentUploadType = UploadTypeEnum::EXTDATA;
             downloadGameMenuItems = networkSystem.getGamesMenuItems(UploadTypeEnum::EXTDATA);
-            menuSystem.changeMenu(selection, currentMenuItems, downloadGameMenuItems, previousMenus, 1, false);
+            menuSystem.changeMenu(selection, currentMenuItems, downloadGameMenuItems, previousMenus, false);
             break;
         }
 
-
-        case menuFunctions::downloadGame: {
+        case menuFunctions::downloadGame:
+        {
             nlohmann::json gameIDJSON = configManager.getGameIDFile(currentUploadType);
-            
+
             currentGameID = std::get<0>(downloadGameMenuItems[selection]);
 
             std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
@@ -341,12 +351,52 @@ void SystemCore::handleInput()
                 std::cout << "I need you to register this game as " << currentGameID << " before you download this save" << std::endl;
                 break;
             }
-            networkSystem.download(currentUploadType, currentGameID, gamePath);
-            
+
+            std::cout << "Downloading " << currentGameID << " to " << gamePath << std::endl;
+            bool downloadSuccessful = networkSystem.download(currentUploadType, currentGameID, gamePath);
+            std::cout << (downloadSuccessful ? "Download successful" : "Download failed") << std::endl;
+
             break;
         }
 
-        case menuFunctions::resetGameIDFiles: {
+        case menuFunctions::existingGameIDExtdataMenuItems:
+        {
+            nlohmann::json gameIDJSON = configManager.getGameIDFile(UploadTypeEnum::EXTDATA);
+            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON, menuFunctions::specialAlterGameID);
+
+            if (gameIDMenuItems.size() == 0)
+            {
+                std::cout << "No game IDs found" << std::endl;
+                break;
+            }
+
+            currentUploadType = UploadTypeEnum::EXTDATA;
+            existingGameIDsMenuItems = gameIDMenuItems;
+            menuSystem.changeMenu(selection, currentMenuItems, existingGameIDsMenuItems, previousMenus, false);
+
+            break;
+        }
+
+        case menuFunctions::existingGameIDSavesMenuItems:
+        {
+            nlohmann::json gameIDJSON = configManager.getGameIDFile(UploadTypeEnum::SAVES);
+            gameIDMenuItems = directoryMenu.getGameIDDirectoryMenuItems(gameIDJSON, menuFunctions::specialAlterGameID);
+
+            if (gameIDMenuItems.size() == 0)
+            {
+                std::cout << "No game IDs found" << std::endl;
+                break;
+            }
+
+            currentUploadType = UploadTypeEnum::SAVES;
+            existingGameIDsMenuItems = gameIDMenuItems;
+            menuSystem.changeMenu(selection, currentMenuItems, existingGameIDsMenuItems, previousMenus, false);
+
+            break;
+        }
+
+        case menuFunctions::resetGameIDFiles:
+        {
             currentGameID = "";
             configManager.resetBothGameIDFiles();
 
@@ -365,7 +415,7 @@ void SystemCore::handleInput()
     {
         if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
         {
-            menuSystem.changeMenu(selection, currentMenuItems, uploadMenuItems, previousMenus, 0, true);
+            menuSystem.changeMenu(selection, currentMenuItems, gameIDDirectoryMenuItems, previousMenus, true);
         }
     }
 
@@ -401,16 +451,31 @@ void SystemCore::handleInput()
         }
     }
 
+    // if (kDown & KEY_RIGHT) {
+    //     if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
+    //     { 
+    //         // FUTURE HANDLE TRAVERSE, LIKE WHEN A PRESSED
+    //     }
+    // }
+
+    // if (kDown & KEY_LEFT) {
+    //     if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
+    //     { 
+    //         // FUTURE HANDLE GOING BACJ
+    //     }
+    // }
+
+    
+
     if (kDown & KEY_B)
     {
         if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
         {
 
-            menuSystem.changeMenu(selection, currentMenuItems, loadingMenuItems, previousMenus, 1, true);
             std::filesystem::path newDirectory = directoryMenu.getCurrentDirectory().parent_path();
             directoryMenu.setCurrentDirectory(newDirectory);
             uploadDirectoryMenuItems = directoryMenu.getCurrentDirectoryMenuItems();
-            menuSystem.changeMenu(selection, currentMenuItems, uploadDirectoryMenuItems, previousMenus, 1, true);
+            menuSystem.changeMenu(selection, currentMenuItems, uploadDirectoryMenuItems, previousMenus, true);
         }
         else
         {
@@ -426,23 +491,20 @@ void SystemCore::sceneRender()
     //     std::cout << "Upload menu" << std::endl;
     // }
 
+    std::string pointerSymbol = "";
     std::string str = "";
     if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
     {
+        pointerSymbol = ">";
         str += std::string(directoryMenu.getCurrentDirectory()) + "\n";
-    }
-    else if (menuSystem.getCurrentMenuItems() == &gameIDMenuItems)
+    } else if (menuSystem.getCurrentMenuItems() == &existingGameIDsMenuItems)
     {
-        str += "Select a game ID\n";
-    }
-    else if (menuSystem.getCurrentMenuItems() == &saveSelectionMenuItems)
-    {
-        str += "Select a save to upload\n";
-    }
-    else if (menuSystem.getCurrentMenuItems() == &downloadGameMenuItems)
-    {
-        str += "Select a game to download\n";
-    }
+        pointerSymbol = ">";
+        std::string currentType = (currentUploadType == UploadTypeEnum::EXTDATA) ? "extdata" : "saves";
+        str += "Current " + currentType + " game IDs" + "\n";
+    } else if (menuSystem.getHeader(currentMenuItems) != nullptr)
+        str += *(menuSystem.getHeader(currentMenuItems)) + "\n";
+
     menuItems renderMenuItems = *currentMenuItems;
 
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -471,7 +533,8 @@ void SystemCore::sceneRender()
         }
     }
 
-    str += "";
+    str += pointerSymbol;
+    
 
     for (size_t i = 0; i < ((renderMenuItems).size() - selection); i++)
     {
@@ -486,10 +549,13 @@ void SystemCore::sceneRender()
 
     //  ABXY
 
-    if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
-    {
-        str += "\n Open Directory   Prev Directory\n Confirm             Cancel";
-    }
+    // if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
+    // {
+    //     str += "\n Open Directory   Prev Directory\n Confirm             Cancel";
+    // }
+
+    if (menuSystem.getFooter(currentMenuItems) != nullptr)
+        str += "\n" + *(menuSystem.getFooter(currentMenuItems));
 
     C2D_TextParse(&dynText, selectorBuf, str.c_str());
     C2D_TextOptimize(&dynText);
@@ -591,14 +657,15 @@ void SystemCore::cleanExit()
     (*currentMenuItems).shrink_to_fit();
 
     mainMenuItems.clear();
+    gameIDDirectoryMenuItems.clear();
     uploadMenuItems.clear();
     downloadMenuItems.clear();
     settingMenuItems.clear();
     uploadDirectoryMenuItems.clear();
-    loadingMenuItems.clear();
     gameIDMenuItems.clear();
     saveSelectionMenuItems.clear();
     downloadGameMenuItems.clear();
+    existingGameIDsMenuItems.clear();
 
     networkSystem.cleanExit();
 

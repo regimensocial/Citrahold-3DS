@@ -18,7 +18,7 @@ public:
     std::filesystem::path getCurrentDirectory();
     menuItems getCurrentDirectoryMenuItems();
     
-    menuItems getGameIDDirectoryMenuItems(nlohmann::json &json);
+    menuItems getGameIDDirectoryMenuItems(nlohmann::json &gameIDJSON, menuFunctions nextAction);
     menuItems getSaveSelectionMenuItems(std::filesystem::path gamePath);
 
     void setCurrentDirectory(std::filesystem::path newDirectory);

@@ -2,12 +2,24 @@
 
 // Define the menu items in this source file
 menuItems mainMenuItems = {
-    {"Upload", menuFunctions::upload},
-    {"Download", menuFunctions::download},
-    {"Settings", menuFunctions::settings}};
+    {"Game IDs", menuFunctions::gameIDDirectoryMenuItems},
+    {"Upload", menuFunctions::uploadMenuItems},
+    {"Download", menuFunctions::downloadMenuItems},
+    {"Settings", menuFunctions::settingsMenuItems}};
+
+menuItems gameIDDirectoryMenuItems = {
+    {"New Game ID", menuFunctions::directoryMenuItems},
+    {"Current saves Game IDs", menuFunctions::existingGameIDSavesMenuItems},
+    {"Current extdata Game IDs", menuFunctions::existingGameIDExtdataMenuItems},
+    {"Back ", menuFunctions::changeToPreviousMenu}
+};
+
+menuItems existingGameIDsMenuItems = {
+    {"loading", menuFunctions::noAction},
+    {"Cancel ", menuFunctions::changeToPreviousMenu}
+};
 
 menuItems uploadMenuItems = {
-    {"New Game Directory", menuFunctions::directoryMenuItems},
     {"Upload Game saves", menuFunctions::gameIDSavesMenuItems},
     {"Upload Game extdata", menuFunctions::gameIDExtdataMenuItems},
     {"Back ", menuFunctions::changeToPreviousMenu}};
@@ -30,10 +42,6 @@ menuItems uploadDirectoryMenuItems = {
 menuItems gameIDMenuItems = {
     {"loading", menuFunctions::noAction},
     {"Cancel ", menuFunctions::changeToPreviousMenu}};
-
-menuItems loadingMenuItems = {
-    {"Loading...", menuFunctions::noAction},
-};
 
 menuItems saveSelectionMenuItems = {
     {"loading", menuFunctions::noAction},

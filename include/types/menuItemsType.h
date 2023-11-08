@@ -8,28 +8,43 @@
 enum class menuFunctions
 {
     noAction,
-    upload,
-    download,
-    settings,
-    inputToken,
-    changeServerAddress,
-    checkServerConnection,
-    changeToMainMenu,
-    changeToPreviousMenu,
-    openKeyboard,
+
+    mainMenuMenuItems,
+    
+    gameIDDirectoryMenuItems,
     directoryMenuItems,
+    existingGameIDSavesMenuItems,
+    existingGameIDExtdataMenuItems,
+    uploadMenuItems,
+    downloadMenuItems,
+    settingsMenuItems,
+
+    saveSelectionMenuItems, // for upload
     gameIDSavesMenuItems,
     gameIDExtdataMenuItems,
-    saveSelectionMenuItems,
-    uploadGame,
+    
     downloadSavesMenuItems,
     downloadExtdataMenuItems,
+
+    changeToPreviousMenu,
+
+    specialAlterGameID,
+    specialDirectory,
+
+    // Settings menu items
+    inputToken,
+    checkServerConnection,
+    resetGameIDFiles,
+
+    // Upload and download a game
+    uploadGame,
     downloadGame,
-    resetGameIDFiles
+
+    // Not used currently
+    openKeyboard,
+    changeServerAddress,
 };
 
 using menuItems = std::vector<std::tuple<std::string, menuFunctions>>;
-
-// Declare other menu-related declarations, functions, and structures if needed
 
 #endif // MENU_ITEMS_TYPE_H

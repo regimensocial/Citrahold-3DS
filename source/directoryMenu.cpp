@@ -24,7 +24,7 @@ menuItems DirectoryMenu::getCurrentDirectoryMenuItems()
     // loop through all DIRECTORIES only in currentDirectory
 
     menuItems directoryMenuItems = {
-        {std::filesystem::path(".. "), menuFunctions::noAction},
+        {std::filesystem::path(".. "), menuFunctions::specialDirectory},
     };
 
     for (const auto &dirEntry : std::filesystem::directory_iterator(currentDirectory))
@@ -33,7 +33,7 @@ menuItems DirectoryMenu::getCurrentDirectoryMenuItems()
         if (std::filesystem::is_directory(dirEntry.path()))
         {
             std::filesystem::path relativePath = std::filesystem::relative(dirEntry, currentDirectory);
-            directoryMenuItems.push_back({relativePath, menuFunctions::noAction});
+            directoryMenuItems.push_back({relativePath, menuFunctions::specialDirectory});
         }
     }
 
@@ -53,7 +53,7 @@ std::filesystem::path DirectoryMenu::getGamePathFromGameID(std::string gameID, n
     return "";
 }
 
-menuItems DirectoryMenu::getGameIDDirectoryMenuItems(nlohmann::json &gameIDJSON)
+menuItems DirectoryMenu::getGameIDDirectoryMenuItems(nlohmann::json &gameIDJSON, menuFunctions nextAction)
 {
 
     menuItems directoryMenuItems = {};
@@ -61,7 +61,7 @@ menuItems DirectoryMenu::getGameIDDirectoryMenuItems(nlohmann::json &gameIDJSON)
     // for of gameIDJSON["gameID"]
     for (auto &gameID : gameIDJSON["gameID"])
     {
-        directoryMenuItems.push_back({gameID[0], menuFunctions::saveSelectionMenuItems});
+        directoryMenuItems.push_back({gameID[0], nextAction});
     }
 
     return directoryMenuItems;

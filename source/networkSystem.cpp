@@ -50,7 +50,7 @@ std::string NetworkSystem::getBase64StringFromFile(std::string fullFilePath, std
 	return "";
 }
 
-void NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::filesystem::path gamePath)
+bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::filesystem::path gamePath)
 {
 	nlohmann::json data;
 	data["token"] = this->token;
@@ -59,23 +59,33 @@ void NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 	responsePair response = sendRequest(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves"), &data);
 	if (response.first == 200)
 	{
+		bool successfulSoFar = true;
 
 		nlohmann::json responseJSON = nlohmann::json::parse(response.second);
 		for (const auto &element : responseJSON["files"].items())
 		{
-			std::cout << (element.value()) << std::endl;
-			responsePair newResponse;
-			data["file"] = element.value();
-			http_post(
-				(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves")).c_str(),
-				data.dump().c_str(),
-				&newResponse,
-				(gamePath / "Citrahold-Download") / element.value());
+			if (successfulSoFar)
+			{
+				std::cout << (element.value()) << std::endl;
+				responsePair newResponse;
+				data["file"] = element.value();
+				http_post(
+					(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves")).c_str(),
+					data.dump().c_str(),
+					&newResponse,
+					(gamePath / "Citrahold-Download") / element.value());
 
-			std::cout << ((gamePath / "Citrahold-Download") / element.value()).string() << std::endl;
-			std::cout << newResponse.first << std::endl;
+				std::cout << ((gamePath / "Citrahold-Download") / element.value()).string() << std::endl;
+				std::cout << newResponse.first << std::endl;
+				if (newResponse.first != 200)
+				{
+					successfulSoFar = false;
+				}
+			}
 		}
+		return successfulSoFar;
 	}
+	return false;
 }
 
 menuItems NetworkSystem::getGamesMenuItems(UploadTypeEnum type)
@@ -101,7 +111,6 @@ menuItems NetworkSystem::getGamesMenuItems(UploadTypeEnum type)
 
 	return {};
 }
-
 
 Result NetworkSystem::http_post(const char *url, const char *data, responsePair *response, std::filesystem::path downloadPath)
 {

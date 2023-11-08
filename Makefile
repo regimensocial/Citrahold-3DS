@@ -6,6 +6,10 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
+ifeq ($(strip $(BUILDTOOLS)),)
+$(error "Please set BUILDTOOLS in your environment. export BUILDTOOLS=<path to>BUILDTOOLS")
+endif
+
 TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
 
@@ -31,6 +35,11 @@ include $(DEVKITARM)/3ds_rules
 #     - icon.png
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
+
+APP_TITLE		:= 	Citrahold
+APP_DESCRIPTION	:=	Simple cloud-sync save tool
+APP_AUTHOR		:=	Jamie Adams, regimensocial
+
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source
@@ -38,8 +47,30 @@ DATA		:=	data
 INCLUDES	:=	include /opt/devkitpro/libctru/include
 GRAPHICS	:=	gfx
 GFXBUILD	:=	$(BUILD)
-#ROMFS		:=	romfs
-#GFXBUILD	:=	$(ROMFS)/gfx
+ROMFS		:=	romfs
+GRAPHICS		:=	assets/gfx
+ROMFS			:=	assets/romfs
+GFXBUILD		:=	$(ROMFS)/gfx
+
+# If left blank, will try to use "icon.png", "$(TARGET).png", or the default ctrulib icon, in that order
+ICON			:=	assets/icon.png
+BANNER_AUDIO	:=	assets/audio.wav
+BANNER_IMAGE	:=	assets/banner.png
+RSF_PATH		:=	assets/app.rsf
+
+# If left blank, makerom will use the default Homebrew logo
+LOGO			:=	assets/splash.bin
+
+# If left blank, makerom will use default values (0xff3ff and CTR-P-CTAP, respectively)
+UNIQUE_ID		:=	0xFF3FE
+PRODUCT_CODE	:=	CTR-HB-CTHD
+
+# Don't really need to change this
+ICON_FLAGS          :=	nosavebackups,visible
+
+VERSION_MAJOR := 1
+VERSION_MINOR := 0
+VERSION_MICRO := 0
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -162,7 +193,13 @@ endif
 
 #---------------------------------------------------------------------------------
 all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+	
+	@mkdir -p $(BUILD) $(GFXBUILD) $(OUTDIR)
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile $(OUTPUT).3dsx
+	@$(BUILDTOOLS)/bannertool makebanner -i "$(BANNER_IMAGE)" -a "$(BANNER_AUDIO)" -o $(BUILD)/banner.bnr
+	@$(BUILDTOOLS)/bannertool makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(APP_ICON)" -f "$(ICON_FLAGS)" -o $(BUILD)/icon.icn
+	@$(BUILDTOOLS)/makerom -f cia -o $(OUTPUT).cia -target t -exefslogo -elf "$(OUTPUT).elf" -rsf "$(RSF_PATH)" -ver "$$(($(VERSION_MAJOR)*1024+$(VERSION_MINOR)*16+$(VERSION_MICRO)))" -banner "$(BUILD)/banner.bnr" -icon "$(BUILD)/icon.icn" -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -logo "$(LOGO)"
+
 
 $(BUILD):
 	@mkdir -p $@

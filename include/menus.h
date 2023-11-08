@@ -11,9 +11,10 @@ extern menuItems uploadMenuItems;
 extern menuItems downloadMenuItems;
 extern menuItems settingMenuItems;
 extern menuItems uploadDirectoryMenuItems;
-extern menuItems loadingMenuItems;
 extern menuItems gameIDMenuItems;
 extern menuItems saveSelectionMenuItems;
 extern menuItems downloadGameMenuItems;
+extern menuItems gameIDDirectoryMenuItems;
+extern menuItems existingGameIDsMenuItems;
 
 #endif

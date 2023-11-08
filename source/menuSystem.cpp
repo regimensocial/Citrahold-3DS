@@ -11,6 +11,23 @@ MenuSystem::MenuSystem()
 {
 	this->menuTextBuf = C2D_TextBufNew(4096);
 	C2D_TextParse(&this->menuText, this->menuTextBuf, "");
+
+	headers = {
+		{&gameIDMenuItems, "Select a game ID"},
+		{&saveSelectionMenuItems, "Select a save"},
+		{&downloadGameMenuItems, "Select a game ID"},
+		{&gameIDDirectoryMenuItems, "Select a game ID"},
+		// {&uploadDirectoryMenuItems, "Select a directory"},
+		{&mainMenuItems, "Main Menu"},
+		{&uploadMenuItems, "Upload Menu"},
+		{&downloadMenuItems, "Download Menu"},
+		{&settingMenuItems, "Settings Menu"},
+	};
+
+	//  ABXY
+	footers = {
+		{&uploadDirectoryMenuItems, " Open Directory   Prev Directory\n Confirm             Cancel"},
+		{&existingGameIDsMenuItems, " Rename ID        Change Directory\n Delete ID         Cancel"}};
 }
 
 C2D_TextBuf *MenuSystem::getMenuTextBuf()
@@ -37,6 +54,16 @@ menuItems *MenuSystem::getCurrentMenuItems()
 	return currentMenuItems;
 }
 
+std::string *MenuSystem::getFooter(menuItems *footer)
+{
+	return &footers[footer];
+}
+
+std::string *MenuSystem::getHeader(menuItems *header)
+{
+	return &headers[header];
+}
+
 void MenuSystem::handleExit()
 {
 	// Delete the text buffers
@@ -47,27 +74,27 @@ void MenuSystem::handleExit()
 	}
 }
 
-void MenuSystem::changeMenu(int &selection, menuItems *&oldMenuItems, menuItems &newMenuItems, std::vector<menuItems *> &previousMenus, int headerSpace, bool dontAddToPreviousMenus)
+void MenuSystem::changeMenu(int &selection, menuItems *&oldMenuItems, menuItems &newMenuItems, std::vector<menuItems *> &previousMenus, bool dontAddToPreviousMenus)
 {
 
 	// This is used to do specific things depending on the menu
 	currentMenuItems = &newMenuItems;
 
-	if (!dontAddToPreviousMenus && &newMenuItems != &uploadDirectoryMenuItems) {
+	if (!dontAddToPreviousMenus && &newMenuItems != &uploadDirectoryMenuItems)
+	{
 		previousMenus.push_back(&newMenuItems);
 	}
 
 	oldMenuItems = &newMenuItems;
 	C2D_TextBufClear(this->menuTextBuf);
 
-	bool shouldGiveHeaderSpace = headerSpace > 0;
 	std::string headerSpaceString = "";
-	for (int i = 0; i < headerSpace; i++)
+	if (getHeader(&newMenuItems) != nullptr)
 	{
 		headerSpaceString += "\n";
 	}
 
-	C2D_TextParse(&this->menuText, this->menuTextBuf, ((shouldGiveHeaderSpace ? headerSpaceString : "") + getMenuString(newMenuItems)).c_str());
+	C2D_TextParse(&this->menuText, this->menuTextBuf, (headerSpaceString + getMenuString(newMenuItems)).c_str());
 	C2D_TextOptimize(&this->menuText);
 
 	selection = 0;
