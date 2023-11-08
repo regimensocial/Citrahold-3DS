@@ -180,6 +180,91 @@ void ConfigManager::updateGameIDFile(UploadTypeEnum type, nlohmann::json newFile
     }
 }
 
+std::string ConfigManager::getGamePathFromID(UploadTypeEnum type, std::string gameID)
+{
+    nlohmann::json gameIDFile = getGameIDFile(type);
+    for (auto &entry : gameIDFile["gameID"])
+    {
+        if (entry[0] == gameID)
+        {
+            return entry[1];
+        }
+    }
+    return "";
+}
+
+std::string ConfigManager::getGameIDFromPath(UploadTypeEnum type, std::string gamePath)
+{
+    nlohmann::json gameIDFile = getGameIDFile(type);
+    for (auto &entry : gameIDFile["gameID"])
+    {
+        if (entry[1] == gamePath)
+        {
+            return entry[0];
+        }
+    }
+    return "";
+}
+
+int ConfigManager::getNumberOfGameIDs(UploadTypeEnum type)
+{
+    nlohmann::json gameIDFile = getGameIDFile(type);
+    return gameIDFile["gameID"].size();
+}
+
+void ConfigManager::addGameIDToFile(UploadTypeEnum type, std::string gameID, std::string gamePath)
+{
+    removeGameIDFromFile(type, gameID);
+
+    nlohmann::json oldGameIDFile = getGameIDFile(type);
+    nlohmann::json newEntry = nlohmann::json::array();
+    newEntry.push_back(gameID);
+    newEntry.push_back(gamePath);
+    oldGameIDFile["gameID"].push_back(newEntry);
+    updateGameIDFile(type, oldGameIDFile);
+}
+
+void ConfigManager::removeGameIDFromFile(UploadTypeEnum type, std::string gameID)
+{
+    nlohmann::json oldGameIDFile = getGameIDFile(type);
+    nlohmann::json newGameIDFile = nlohmann::json::array();
+    for (auto &entry : oldGameIDFile["gameID"])
+    {
+        if (entry[0] != gameID)
+        {
+            newGameIDFile.push_back(entry);
+        }
+    }
+    oldGameIDFile["gameID"] = newGameIDFile;
+    updateGameIDFile(type, oldGameIDFile);
+}
+
+void ConfigManager::renameGameIDInFile(UploadTypeEnum type, std::string oldGameID, std::string newGameID)
+{
+    nlohmann::json oldGameIDFile = getGameIDFile(type);
+    for (auto &entry : oldGameIDFile["gameID"])
+    {
+        if (entry[0] == oldGameID)
+        {
+            entry[0] = newGameID;
+        }
+    }
+    updateGameIDFile(type, oldGameIDFile);
+}
+
+void ConfigManager::redirectGameIDInFile(UploadTypeEnum type, std::string gameID, std::string newPath)
+{
+    nlohmann::json oldGameIDFile = getGameIDFile(type);
+    for (auto &entry : oldGameIDFile["gameID"])
+    {
+        if (entry[0] == gameID)
+        {
+            entry[1] = newPath;
+        }
+    }
+    updateGameIDFile(type, oldGameIDFile);
+}
+
 nlohmann::json ConfigManager::getConfig() const
 {
     return config;

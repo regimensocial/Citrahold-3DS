@@ -42,13 +42,16 @@ enum class menuFunctions
     changeServerAddress,
 
 
-
-    alterGameID,
     traverseDirectory,
     
     specialB_goPreviousDirectory,
-    specialX_exitDirectorySelection,
+    specialX_exitDirectorySelection, 
     specialY_enterGameID,
+
+    renameGameID,
+    specialX_redirectGameID,
+    specialY_deleteGameID,
+    specialB_exitExistingGameIDSelection,
 };
 
 using menuItems = std::vector<std::tuple<std::string, menuFunctions>>;

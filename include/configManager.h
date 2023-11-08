@@ -17,7 +17,17 @@ public:
     void setToken(std::string token);
 
     nlohmann::json getGameIDFile(UploadTypeEnum type);
-    void updateGameIDFile(UploadTypeEnum type, nlohmann::json newFile);
+
+    // consider addGameIDToFile
+
+    std::string getGamePathFromID(UploadTypeEnum type, std::string gameID);
+    std::string getGameIDFromPath(UploadTypeEnum type, std::string gamePath);
+    int getNumberOfGameIDs(UploadTypeEnum type);
+
+    void addGameIDToFile(UploadTypeEnum type, std::string gameID, std::string gamePath);
+    void removeGameIDFromFile(UploadTypeEnum type, std::string gameID);
+    void renameGameIDInFile(UploadTypeEnum type, std::string oldGameID, std::string newGameID);
+    void redirectGameIDInFile(UploadTypeEnum type, std::string gameID, std::string newPath);
 
     nlohmann::json getConfig() const;
     std::string getToken() const;
@@ -28,6 +38,8 @@ public:
     bool loggedIn();
 
 private:
+    void updateGameIDFile(UploadTypeEnum type, nlohmann::json newFile);
+
     std::filesystem::path configDirectory;
     std::filesystem::path gamesDirectory;
     nlohmann::json config;

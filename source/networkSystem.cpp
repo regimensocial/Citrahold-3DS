@@ -66,7 +66,7 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 		{
 			if (successfulSoFar)
 			{
-				std::cout << (element.value()) << std::endl;
+				std::cout << "Downloading file " << (element.value()) << std::endl;
 				responsePair newResponse;
 				data["file"] = element.value();
 				http_post(
@@ -124,9 +124,7 @@ Result NetworkSystem::http_post(const char *url, const char *data, responsePair 
 
 	if (response != nullptr)
 	{
-		// by default, set the response to 408 because that's what we'll return if we don't get a response
-
-		*response = responsePair(408, "");
+		*response = responsePair(0, "");
 	}
 
 	if (DEBUG)
@@ -214,20 +212,6 @@ Result NetworkSystem::http_post(const char *url, const char *data, responsePair 
 		}
 	} while ((statuscode >= 301 && statuscode <= 303) || (statuscode >= 307 && statuscode <= 308));
 
-	// if (statuscode != 200)
-	// {
-
-	//     if (DEBUG)
-	//         printf("URL returned status: %" PRIx32 "\n", statuscode);
-
-	//     httpcCloseContext(&context);
-	//     if (newurl != NULL)
-	//         free(newurl);
-	//     return -2;
-	// }
-
-	// ^^^ this is commented because we want 400 errors to be handled
-
 	// This relies on an optional Content-Length header and may be 0
 	ret = httpcGetDownloadSizeState(&context, NULL, &contentsize);
 	if (ret != 0)
@@ -295,10 +279,10 @@ Result NetworkSystem::http_post(const char *url, const char *data, responsePair 
 	if (DEBUG)
 		printf("response size: %" PRIx32 "\n", size);
 
-	// check if buffer exists
+	
 	if (downloadPath != "")
 	{
-		// write the buffer to a file
+		// Write the buffer to a file
 
 		std::filesystem::path parentPath = std::filesystem::path(downloadPath).parent_path();
 
@@ -323,14 +307,6 @@ Result NetworkSystem::http_post(const char *url, const char *data, responsePair 
 		*response = responsePair;
 	}
 
-	// Print result
-
-	// this doesn't work properly, buffer size is iffy
-	// causes weird symbols to appear in the console
-
-	// printf((char *)buf);
-	// printf("\n");
-
 	if (response != nullptr && downloadPath == "")
 	{
 
@@ -344,16 +320,6 @@ Result NetworkSystem::http_post(const char *url, const char *data, responsePair 
 
 		*response = responsePair;
 	}
-
-	// if (response != nullptr)
-	// {
-	//     size_t dataSize = size;
-	//     while (dataSize > 0 && buf[dataSize - 1] == '\n')
-	//     {
-	//         dataSize--;
-	//     }
-	//     response->assign(reinterpret_cast<const char *>(buf), dataSize);
-	// }
 
 	gfxFlushBuffers();
 	gfxSwapBuffers();
@@ -377,17 +343,13 @@ std::string NetworkSystem::getTokenFromShorthandToken(std::string shorthandToken
 	responsePair responseAsString = sendRequest(this->serverAddress + "/getToken", &data);
 	if (responseAsString.first == 200)
 	{
-		// we got a token
-		// debug output
 		nlohmann::json response = nlohmann::json::parse(responseAsString.second);
-
 		this->token = response["token"];
 		return response["token"];
 	}
 	else
 	{
-		// we didn't get a token
-		// TODO: handle this
+		std::cout << "Failed to get token from shorthand token\n";
 		return "invalid";
 	}
 }
@@ -409,8 +371,7 @@ std::string NetworkSystem::verifyTokenToSetUserID(std::string fullToken)
 	}
 	else
 	{
-		// we didn't get a token
-		// TODO: handle this
+		std::cout << "Failed to verify token\n";
 		return "invalid";
 	}
 }

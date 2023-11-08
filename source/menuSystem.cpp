@@ -26,8 +26,8 @@ MenuSystem::MenuSystem()
 
 	//  ABXY
 	footers = {
-		{&uploadDirectoryMenuItems, " Open Directory   Prev Directory\n Confirm             Cancel"},
-		{&existingGameIDsMenuItems, " Rename ID        Change Directory\n Delete ID         Cancel"}};
+		// {&uploadDirectoryMenuItems, " Open Directory   Prev Directory\n Confirm Current     Cancel"},
+		{&existingGameIDsMenuItems, " Rename ID        Change Directory\n Delete ID           Cancel"}};
 }
 
 C2D_TextBuf *MenuSystem::getMenuTextBuf()
@@ -80,7 +80,7 @@ void MenuSystem::changeMenu(int &selection, menuItems *&oldMenuItems, menuItems 
 	// This is used to do specific things depending on the menu
 	currentMenuItems = &newMenuItems;
 
-	if (!dontAddToPreviousMenus && &newMenuItems != &uploadDirectoryMenuItems)
+	if (!dontAddToPreviousMenus && &newMenuItems != &uploadDirectoryMenuItems && &newMenuItems != &existingGameIDsMenuItems)
 	{
 		previousMenus.push_back(&newMenuItems);
 	}
