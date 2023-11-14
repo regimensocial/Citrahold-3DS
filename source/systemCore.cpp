@@ -677,7 +677,7 @@ void SystemCore::sceneRender()
     if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
     {
         std::stringstream ss;
-        ss << ((selection == 0) ? "/" : "") << " Prev Directory " + (selection == 0 ? "" : " Open " + std::get<0>((renderMenuItems)[selection])) + "\n Cancel     Confirm " + std::string(directoryMenu.getCurrentDirectory());
+        ss << ((selection == 0) ? "/" : "") << " Prev Directory    " + (selection == 0 ? "" : " Open " + std::get<0>((renderMenuItems)[selection])) + "\n Cancel     Confirm " + std::string(directoryMenu.getCurrentDirectory());
         str += ss.str();
     }
     else if (menuSystem.getFooter(currentMenuItems) != nullptr)

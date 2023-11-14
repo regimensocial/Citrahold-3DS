@@ -5,6 +5,7 @@ lib/
 *.3dsx
 *.smdh
 *.elf
+*.cia
 *.t3x
 *.bcfnt
 *~.DS_Store
