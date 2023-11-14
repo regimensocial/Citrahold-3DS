@@ -31,7 +31,6 @@ private:
     std::string serverAddress;
     std::string token;
 
-    Result http_post(const char *url, const char *data, responsePair *response = nullptr, std::filesystem::path downloadPath = "");
     responsePair sendRequest(std::string address, nlohmann::json *dataToSend = nullptr); //
 
     void setTokenFromString(std::string token);

@@ -9,11 +9,12 @@
 #include <inttypes.h>
 #include "json.hpp"
 #include "base64.h"
+#include "secureNetworkRequest.h"
 
 NetworkSystem::NetworkSystem() // std::string serverAddress, std::string token
 {
 
-	httpcInit(4 * 1024 * 1024);
+	network_init();
 
 	sendRequest(this->serverAddress + "/areyouawake");
 }
@@ -69,16 +70,25 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 				std::cout << "Downloading file " << (element.value()) << std::endl;
 				responsePair newResponse;
 				data["file"] = element.value();
-				http_post(
-					(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves")).c_str(),
-					data.dump().c_str(),
-					&newResponse,
-					(gamePath / "Citrahold-Download") / element.value());
+				// http_post(
+				// 	(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves")).c_str(),
+				// 	data.dump().c_str(),
+				// 	&newResponse,
+				// 	(gamePath / "Citrahold-Download") / element.value());
+
+				std::string address = this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves");
+				std::string jsonData = data.dump();
+				std::string downloadPath = (gamePath / "Citrahold-Download") / element.value();
+
+				newResponse = network_request(&address, &jsonData, &downloadPath);
 
 				std::cout << ((gamePath / "Citrahold-Download") / element.value()).string() << std::endl;
 				std::cout << newResponse.first << std::endl;
 				if (newResponse.first != 200)
 				{
+					std::cout << "Failed to download file " << (element.value()) << std::endl;
+					std::cout << "HTTP Response: " << newResponse.first << std::endl;
+					
 					successfulSoFar = false;
 				}
 			}
@@ -112,225 +122,6 @@ menuItems NetworkSystem::getGamesMenuItems(UploadTypeEnum type)
 	return {};
 }
 
-Result NetworkSystem::http_post(const char *url, const char *data, responsePair *response, std::filesystem::path downloadPath)
-{
-	Result ret = 0;
-	httpcContext context;
-	char *newurl = NULL;
-	u32 statuscode = 0;
-	u32 contentsize = 0, readsize = 0, size = 0;
-	u8 *buf, *lastbuf;
-	bool DEBUG = false;
-
-	if (response != nullptr)
-	{
-		*response = responsePair(0, "");
-	}
-
-	if (DEBUG)
-		printf("POSTing %s\n", url);
-
-	do
-	{
-		ret = httpcOpenContext(&context, HTTPC_METHOD_POST, url, 0);
-
-		if (DEBUG)
-			printf("return from httpcOpenContext: %" PRIx32 "\n", ret);
-
-		// This disables SSL cert verification, so https:// will be usable
-		ret = httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
-
-		if (DEBUG)
-			printf("return from httpcSetSSLOpt: %" PRIx32 "\n", ret);
-
-		// Enable Keep-Alive connections
-		ret = httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
-
-		if (DEBUG)
-			printf("return from httpcSetKeepAlive: %" PRIx32 "\n", ret);
-
-		// Set a User-Agent header so websites can identify your application
-		ret = httpcAddRequestHeaderField(&context, "User-Agent", "httpc-example/1.0.0");
-
-		if (DEBUG)
-			printf("return from httpcAddRequestHeaderField: %" PRIx32 "\n", ret);
-
-		// Set a Content-Type header so websites can identify the format of our raw body data.
-		// If you want to send form data in your request, use:
-		// ret = httpcAddRequestHeaderField(&context, "Content-Type", "multipart/form-data");
-		// If you want to send raw JSON data in your request, use:
-		ret = httpcAddRequestHeaderField(&context, "Content-Type", "application/json");
-
-		if (DEBUG)
-			printf("return from httpcAddRequestHeaderField: %" PRIx32 "\n", ret);
-
-		// Post specified data.
-		// If you want to add a form field to your request, use:
-		// ret = httpcAddPostDataAscii(&context, "data", value);
-		// If you want to add a form field containing binary data to your request, use:
-		// ret = httpcAddPostDataBinary(&context, "field name", yourBinaryData, length);
-		// If you want to add raw data to your request, use:
-		ret = httpcAddPostDataRaw(&context, (u32 *)data, strlen(data));
-
-		if (DEBUG)
-			printf("return from httpcAddPostDataRaw: %" PRIx32 "\n", ret);
-
-		ret = httpcBeginRequest(&context);
-		if (ret != 0)
-		{
-			httpcCloseContext(&context);
-			if (newurl != NULL)
-				free(newurl);
-			return ret;
-		}
-
-		ret = httpcGetResponseStatusCode(&context, &statuscode);
-		if (ret != 0)
-		{
-			httpcCloseContext(&context);
-			if (newurl != NULL)
-				free(newurl);
-			return ret;
-		}
-
-		if ((statuscode >= 301 && statuscode <= 303) || (statuscode >= 307 && statuscode <= 308))
-		{
-			if (newurl == NULL)
-				newurl = static_cast<char *>(malloc(0x1000));
-			if (newurl == NULL)
-			{
-				httpcCloseContext(&context);
-				return -1;
-			}
-			ret = httpcGetResponseHeader(&context, "Location", newurl, 0x1000);
-			url = newurl; // Change pointer to the url that we just learned
-
-			if (DEBUG)
-				printf("redirecting to url: %s\n", url);
-
-			httpcCloseContext(&context); // Close this context before we try the next
-		}
-	} while ((statuscode >= 301 && statuscode <= 303) || (statuscode >= 307 && statuscode <= 308));
-
-	// This relies on an optional Content-Length header and may be 0
-	ret = httpcGetDownloadSizeState(&context, NULL, &contentsize);
-	if (ret != 0)
-	{
-		httpcCloseContext(&context);
-		if (newurl != NULL)
-			free(newurl);
-		return ret;
-	}
-
-	if (DEBUG)
-		printf("reported size: %" PRIx32 "\n", contentsize);
-
-	// Start with a single page buffer
-	buf = (u8 *)malloc(0x1000);
-	if (buf == NULL)
-	{
-		httpcCloseContext(&context);
-		if (newurl != NULL)
-			free(newurl);
-		return -1;
-	}
-
-	do
-	{
-		// This download loop resizes the buffer as data is read.
-		ret = httpcDownloadData(&context, buf + size, 0x1000, &readsize);
-		size += readsize;
-		if (ret == (s32)HTTPC_RESULTCODE_DOWNLOADPENDING)
-		{
-			lastbuf = buf; // Save the old pointer, in case realloc() fails.
-			buf = static_cast<u8 *>(realloc(buf, size + 0x1000));
-			if (buf == NULL)
-			{
-				httpcCloseContext(&context);
-				free(lastbuf);
-				if (newurl != NULL)
-					free(newurl);
-				return -1;
-			}
-		}
-	} while (ret == (s32)HTTPC_RESULTCODE_DOWNLOADPENDING);
-
-	if (ret != 0)
-	{
-		httpcCloseContext(&context);
-		if (newurl != NULL)
-			free(newurl);
-		free(buf);
-		return -1;
-	}
-
-	// Resize the buffer back down to our actual final size
-	lastbuf = buf;
-	buf = static_cast<u8 *>(realloc(buf, size));
-	if (buf == NULL)
-	{ // realloc() failed.
-		httpcCloseContext(&context);
-		free(lastbuf);
-		if (newurl != NULL)
-			free(newurl);
-		return -1;
-	}
-
-	if (DEBUG)
-		printf("response size: %" PRIx32 "\n", size);
-
-	
-	if (downloadPath != "")
-	{
-		// Write the buffer to a file
-
-		std::filesystem::path parentPath = std::filesystem::path(downloadPath).parent_path();
-
-		if (!std::filesystem::exists(parentPath))
-		{
-			std::filesystem::create_directories(parentPath);
-		}
-
-		std::ofstream file(downloadPath, std::ios::binary | std::ios::out);
-
-		if (!file)
-		{
-			std::cout << "Failed to open or create file (" + downloadPath.string() + ")\n";
-		}
-		else
-		{
-			file.write((char *)buf, size);
-			file.close();
-		}
-
-		std::pair<int, std::string> responsePair(statuscode, "");
-		*response = responsePair;
-	}
-
-	if (response != nullptr && downloadPath == "")
-	{
-
-		// printf("%.*s\n", (int)size, buf);
-
-		// response->assign((char *)buf);
-
-		std::string result(reinterpret_cast<char *>(buf), size);
-
-		std::pair<int, std::string> responsePair(statuscode, result);
-
-		*response = responsePair;
-	}
-
-	gfxFlushBuffers();
-	gfxSwapBuffers();
-
-	httpcCloseContext(&context);
-	free(buf);
-	if (newurl != NULL)
-		free(newurl);
-
-	return 0;
-}
 
 std::string NetworkSystem::getTokenFromShorthandToken(std::string shorthandToken)
 {
@@ -405,11 +196,10 @@ responsePair NetworkSystem::sendRequest(std::string address, nlohmann::json *dat
 		data = dataToSend->dump();
 	}
 
-	this->http_post(address.c_str(), data.c_str(), &response);
-	return response;
+	return network_request(&address, &data);
 }
 
 void NetworkSystem::cleanExit()
 {
-	httpcExit();
+	network_exit();
 }
