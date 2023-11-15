@@ -27,7 +27,7 @@ ConfigManager::ConfigManager()
         file.open("/3ds/Citrahold/config.json", std::ios::out);
 
         nlohmann::json data = {
-            {"serverAddress", "http://192.168.1.152:3000"},
+            {"serverAddress", "https://api.citrahold.com"},
             {"token", ""},
             {"deleteSaveAfterUpload", "false"},
             {"_note", "keep your token private!"}
