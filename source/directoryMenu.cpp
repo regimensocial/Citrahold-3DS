@@ -21,7 +21,6 @@ std::filesystem::path DirectoryMenu::getCurrentDirectory()
 
 menuItems DirectoryMenu::getCurrentDirectoryMenuItems()
 {
-    // loop through all DIRECTORIES only in currentDirectory
 
     menuItems directoryMenuItems = {
         {std::filesystem::path(".. "), menuFunctions::traverseDirectory},
@@ -29,7 +28,6 @@ menuItems DirectoryMenu::getCurrentDirectoryMenuItems()
 
     for (const auto &dirEntry : std::filesystem::directory_iterator(currentDirectory))
     {
-        // if this is a directory.
         if (std::filesystem::is_directory(dirEntry.path()))
         {
             std::filesystem::path relativePath = std::filesystem::relative(dirEntry, currentDirectory);
@@ -42,7 +40,6 @@ menuItems DirectoryMenu::getCurrentDirectoryMenuItems()
 
 std::filesystem::path DirectoryMenu::getGamePathFromGameID(std::string gameID, nlohmann::json &gameIDJSON)
 {
-    // we need to find the gameID in the json file
     for (auto &gameIDJSONEntry : gameIDJSON["gameID"])
     {
         if (gameIDJSONEntry[0] == gameID)
@@ -58,7 +55,6 @@ menuItems DirectoryMenu::getGameIDDirectoryMenuItems(nlohmann::json &gameIDJSON,
 
     menuItems directoryMenuItems = {};
 
-    // for of gameIDJSON["gameID"]
     for (auto &gameID : gameIDJSON["gameID"])
     {
         directoryMenuItems.push_back({gameID[0], nextAction});
@@ -70,13 +66,11 @@ menuItems DirectoryMenu::getGameIDDirectoryMenuItems(nlohmann::json &gameIDJSON,
 menuItems DirectoryMenu::getSaveSelectionMenuItems(std::filesystem::path gamePath)
 {
 
-    // loop through all DIRECTORIES only in currentDirectory
 
     menuItems saveSelectionMenuItems;
 
     for (const auto &dirEntry : std::filesystem::directory_iterator(gamePath))
     {
-        // if this is a directory.
         if (std::filesystem::is_directory(dirEntry.path()))
         {
             std::filesystem::path relativePath = std::filesystem::relative(dirEntry, gamePath);

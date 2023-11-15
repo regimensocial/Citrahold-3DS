@@ -106,9 +106,19 @@ void MenuSystem::goToPreviousMenu(int &selection, menuItems *&currentMenuItems, 
 	{
 		menuItems *secondLastItem = previousMenus[previousMenus.size() - 2];
 
-		previousMenus.pop_back();
+		// previousMenus.pop_back();
 
-		previousMenus.pop_back();
+		// previousMenus.pop_back();
+
+		if (previousMenus.size() >= 2)
+		{
+			previousMenus.pop_back();
+		}
+
+		if (previousMenus.size() >= 2)
+		{
+			previousMenus.pop_back();
+		}
 
 		if (secondLastItem)
 		{

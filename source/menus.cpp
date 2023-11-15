@@ -33,6 +33,7 @@ menuItems settingMenuItems = {
     {"Input a shorthand token", menuFunctions::inputToken},
     {"Check server connection", menuFunctions::checkServerConnection},
     {"Reset game ID files", menuFunctions::resetGameIDFiles},
+    {"Delete saves after upload?", menuFunctions::deleteSavesAfterUpload},
     {"Back ", menuFunctions::changeToPreviousMenu}};
 
 menuItems uploadDirectoryMenuItems = {

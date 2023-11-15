@@ -32,6 +32,7 @@ enum class menuFunctions
     inputToken,
     checkServerConnection,
     resetGameIDFiles,
+    deleteSavesAfterUpload,
 
     // Upload and download a game
     uploadGame,

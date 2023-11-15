@@ -12,13 +12,15 @@
 #include "menuSystem.h"
 #include "systemCore.h"
 
+// #include <malloc.h>    // for mallinfo() 
+
 int main()
 {
 	SystemCore systemCore;
 
 	while (aptMainLoop())
 	{
-
+		
 		systemCore.handleInput();
 		systemCore.sceneRender();
 

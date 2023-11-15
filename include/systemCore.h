@@ -37,6 +37,8 @@ private:
     
     menuItems* currentMenuItems;
     std::vector<menuItems *> previousMenus;
+    int zoom = 0;
+    bool dontUseVolumeBar = true;
     
     C3D_RenderTarget *screen;
     UploadTypeEnum currentUploadType;

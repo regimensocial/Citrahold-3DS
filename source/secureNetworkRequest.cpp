@@ -200,11 +200,15 @@ responsePair network_request(std::string *address, std::string *jsonData, std::s
 				curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpStatusCode);
 			}
 
+			curl_slist_free_all(headers);
+
 			if (data.fp != nullptr)
 				fclose(data.fp);
 
 			curl_easy_cleanup(curl);
 			curl_global_cleanup();
+
+			// free other stuff??
 
 			return std::make_pair(httpStatusCode, data.jsonResponse);
 		}

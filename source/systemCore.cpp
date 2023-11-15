@@ -1,24 +1,23 @@
 #include "systemCore.h"
 #include <3ds.h>
 #include <citro2d.h>
+#include <sstream>
 #include "menuSystem.h"
 #include "menus.h"
 #include "networkSystem.h"
 #include "configManager.h"
 #include "directoryMenu.h"
 #include "json.hpp"
-#include <sstream>
-
+#include "helpers.h"
 
 SystemCore::SystemCore() : networkSystem()
 {
-    // Initialise the libs
     gfxInitDefault();
 
     consoleInit(GFX_BOTTOM, NULL);
 
     std::cout << "\n- - - - - - - - - - - - - - - - -\n\nWelcome to Citrahold." << std::endl;
-    std::cout << "Press START at any point to exit.\n\nPlease use the D-pad to navigate, \nand use A to confirm actions.\n\nYou can ignore this console for \nmost intents and purposes.\n\nIf above text is illegible, please \nreduce volume now.\n\n- - - - - - - - - - - - - - - - -"
+    std::cout << "Press START at any point to exit.\n\nPlease use the D-pad to navigate, \nand use A to confirm actions.\n\nYou can ignore this console for \nmost intents and purposes.\n\n- - - - - - - - - - - - - - - - -"
               << std::endl;
 
     configManager = ConfigManager();
@@ -40,10 +39,6 @@ SystemCore::SystemCore() : networkSystem()
     C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
     C2D_Prepare();
 
-    // menuSystem = MenuSystem();
-    // selectorBuf = C2D_TextBufNew(4096);
-
-    // Create screen
     screen = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
     size = 0.6f;
     selection = 0;
@@ -56,12 +51,12 @@ SystemCore::SystemCore() : networkSystem()
 
 void SystemCore::checkServerConnection()
 {
-    std::cout << "\nGetting server status...\nThis should be INSTANT!\n"
+    std::cout << "\nGetting server status...\nThis should be (fairly) INSTANT!\n"
               << std::endl;
     responsePair serverStatus = networkSystem.init(configManager.getConfig()["serverAddress"], configManager.getToken());
     std::cout << "Reported server status: HTTP " << serverStatus.first << std::endl;
 
-    // at some point, we should check if they're connected to the internet
+    // at some point, we should check if they're connected to the internet???
     std::cout << "This is " << (serverStatus.first == 200 ? "OK" : "NOT OK\nTHIS MAKES NO SENSE AT ALL") << std::endl
               << std::endl;
 
@@ -206,7 +201,6 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
                 if (gameID != "")
                 {
-                    // we need to add [gameID, path] to "gameID" of configManager.getGameIDFile()
 
                     UploadTypeEnum uploadType = UploadTypeEnum::SAVES;
                     if (directoryMenu.getCurrentDirectory().string().find("extdata") != std::string::npos)
@@ -251,6 +245,15 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
             break;
         }
 
+        case menuFunctions::deleteSavesAfterUpload:
+        {
+
+            configManager.setDeleteSaveAfterUpload(!configManager.getDeleteSaveAfterUpload());
+            configManager.getDeleteSaveAfterUpload() ? std::cout << "Saves will now be deleted after\nupload" << std::endl : std::cout << "Saves will no longer be deleted\nafter upload" << std::endl;
+
+            break;
+        }
+
         case menuFunctions::renameGameID:
         {
             std::string newGameID = openKeyboard("Enter a new ID to replace " + std::get<0>(existingGameIDsMenuItems[selection]), std::get<0>(existingGameIDsMenuItems[selection]));
@@ -287,8 +290,6 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
             break;
 
         case menuFunctions::changeToPreviousMenu:
-            // changeMenu(selection, items, *previousMenu);
-
             menuSystem.goToPreviousMenu(selection, currentMenuItems, previousMenus);
             break;
 
@@ -415,6 +416,11 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
             currentGameID = std::get<0>(gameIDMenuItems[selection]);
             std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
             saveSelectionMenuItems = directoryMenu.getSaveSelectionMenuItems(gamePath);
+            if (saveSelectionMenuItems.size() == 0)
+            {
+                std::cout << "No saves found" << std::endl;
+                break;
+            }
             menuSystem.changeMenu(selection, currentMenuItems, saveSelectionMenuItems, previousMenus, false);
             break;
         }
@@ -426,16 +432,17 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
             std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
             std::filesystem::path savePath = gamePath / std::get<0>(saveSelectionMenuItems[selection]);
 
+            std::cout << "Upload started..." << std::endl;
+
             try
             {
                 int prevStatus = 0;
-                // get GAME PATH not save path
                 std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
 
                 for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(savePath))
                 {
 
-                    if (std::filesystem::is_regular_file(dirEntry) && (prevStatus == 0 || prevStatus == 400)) // change to if not 201/200
+                    if (std::filesystem::is_regular_file(dirEntry) && (prevStatus == 0 || prevStatus == 400)) // change to if not 201/200 in future???
                     {
                         std::filesystem::path fullPath = dirEntry.path();
                         std::filesystem::path relativePath = std::filesystem::relative(dirEntry, savePath);
@@ -447,7 +454,15 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
                 if (prevStatus == 201 || prevStatus == 200)
                 {
+                    if (configManager.getDeleteSaveAfterUpload())
+                    {
+                        std::filesystem::remove_all(savePath);
+                        std::cout << "Deleted save." << std::endl;
+                    }
+
                     std::cout << "Upload successful" << std::endl;
+
+                    menuSystem.changeMenu(selection, currentMenuItems, mainMenuItems, previousMenus);
                 }
                 else if (prevStatus == 0)
                 {
@@ -491,7 +506,8 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
             std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
             if (gamePath == "")
             {
-                std::cout << "You need to register this game as\n" << currentGameID << " before you download this save" << std::endl;
+                std::cout << "You need to register this game as\n"
+                          << currentGameID << " before you download this save" << std::endl;
                 break;
             }
 
@@ -547,7 +563,7 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
         }
 
         default:
-            
+
             break;
         }
 
@@ -560,17 +576,46 @@ void SystemCore::handleInput()
 {
     hidScanInput();
 
-    // get volume slider value
+    // volume can be used to increase/decrease text size
     u8 volume;
     HIDUSER_GetSoundVolume(&volume);
-    size = 0.6f * (1.0f - volume / 63.0f);
-    // volume can be used to increase/decrease text size
+    if (!dontUseVolumeBar)
+    {
+        size = 0.6f * (1.0f - volume / 63.0f);
+    }
+    else
+    {
+        size = 0.6f * (1.0f - zoom / 63.0f);
+    }
 
-    // Respond to user input
     u32 kDown = hidKeysDown();
-    // u32 kHeld = hidKeysHeld();
+    u32 kHeld = hidKeysHeld();
+
     if (kDown & KEY_START)
         halt = true; // break in order to return to hbmenu
+
+    if (kDown & KEY_SELECT)
+    {
+        dontUseVolumeBar = !dontUseVolumeBar;
+        dontUseVolumeBar ? std::cout << "Use left and right shoulder to zoom." << std::endl : std::cout << "Use volume bar to zoom." << std::endl;
+    }
+
+    if (kHeld & KEY_L)
+    {
+        zoom++;
+        if (zoom > 63)
+        {
+            zoom = 63;
+        }
+    }
+    else if (kHeld & KEY_R)
+    {
+        zoom--;
+        if (zoom < 0)
+        {
+            zoom = 0;
+        }
+    }
 
     if (kDown & KEY_UP)
         if (selection <= 0)
@@ -635,15 +680,10 @@ void SystemCore::sceneRender()
     C2D_TargetClear(screen, C2D_Color32(0xFF, 0xDA, 0x75, 0xFF));
     C2D_SceneBegin(screen);
 
-    // Clear the dynamic text buffer
     C2D_TextBufClear(*menuSystem.getMenuTextBuf());
     C2D_TextBufClear(selectorBuf);
-
-    // Draw static text strings
-
-    // C2D_DrawText(&g_staticText[1], 0, 16.0f, 215.0f, 0.5f, size, size);
     C2D_DrawText(menuSystem.getMenuText(), 0, 38.0f, 16.0f, 0.5f, size, size);
-    // Generate and draw dynamic text
+
 
     C2D_Text dynText;
 
@@ -740,13 +780,13 @@ std::string SystemCore::openKeyboard(std::string placeholder, std::string initia
             break;
         }
         else if (res != SWKBD_HOMEPRESSED && res != SWKBD_POWERPRESSED)
-            break; 
+            break;
 
         shouldQuit = !aptMainLoop();
     } while (!shouldQuit);
 
     std::string mybufAsString(mybuf);
-    return mybufAsString;
+    return trim(mybufAsString);
 }
 
 bool SystemCore::isHalted()

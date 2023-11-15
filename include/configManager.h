@@ -31,6 +31,8 @@ public:
 
     nlohmann::json getConfig() const;
     std::string getToken() const;
+    bool getDeleteSaveAfterUpload() const;
+    void setDeleteSaveAfterUpload(bool deleteSaveAfterUpload);
 
     std::string userID;
     void resetBothGameIDFiles();

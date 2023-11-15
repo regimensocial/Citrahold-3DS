@@ -9,7 +9,6 @@ ConfigManager::ConfigManager()
 {
     std::string directoryPath = "/3ds/Citrahold";
 
-    // Check if the directory exists, and create it if it doesn't
     if (!std::filesystem::exists(directoryPath) || !std::filesystem::is_directory(directoryPath))
     {
         if (std::filesystem::create_directories(directoryPath))
@@ -30,7 +29,10 @@ ConfigManager::ConfigManager()
         nlohmann::json data = {
             {"serverAddress", "http://192.168.1.152:3000"},
             {"token", ""},
-            {"_note", "keep your token private!"}};
+            {"deleteSaveAfterUpload", "false"},
+            {"_note", "keep your token private!"}
+
+        };
 
         file << data.dump();
 
@@ -66,8 +68,9 @@ std::filesystem::path ConfigManager::getGamesDirectory(UploadTypeEnum type) cons
 void ConfigManager::updateConfigFile(nlohmann::json newConfig)
 {
     std::filesystem::path filePath = configDirectory / "config.json";
-
     std::ofstream file(filePath);
+
+    config = newConfig;
 
     if (file.is_open())
     {
@@ -90,7 +93,6 @@ void ConfigManager::setToken(std::string token)
 
 nlohmann::json ConfigManager::getGameIDFile(UploadTypeEnum type)
 {
-    // TO BE IMPLEMENTED
 
     std::filesystem::path filePath = configDirectory / (type == UploadTypeEnum::SAVES ? "gameIDSaves.json" : "gameIDExtdata.json");
 
@@ -120,7 +122,6 @@ nlohmann::json ConfigManager::getGameIDFile(UploadTypeEnum type)
 
 void ConfigManager::resetBothGameIDFiles()
 {
-    // clear both gameID files
     std::filesystem::path filePath = configDirectory / "gameIDSaves.json";
     std::ofstream file(filePath);
     if (file.is_open())
@@ -161,7 +162,6 @@ void ConfigManager::resetBothGameIDFiles()
 
 void ConfigManager::updateGameIDFile(UploadTypeEnum type, nlohmann::json newFile)
 {
-    // TO BE IMPLEMENTED
 
     std::filesystem::path filePath = configDirectory / (type == UploadTypeEnum::SAVES ? "gameIDSaves.json" : "gameIDExtdata.json");
 
@@ -273,6 +273,17 @@ nlohmann::json ConfigManager::getConfig() const
 std::string ConfigManager::getToken() const
 {
     return config["token"];
+}
+
+bool ConfigManager::getDeleteSaveAfterUpload() const
+{
+    return (config["deleteSaveAfterUpload"].dump() == "true");
+}
+
+void ConfigManager::setDeleteSaveAfterUpload(bool deleteSaveAfterUpload)
+{
+    config["deleteSaveAfterUpload"] = deleteSaveAfterUpload;
+    updateConfigFile(config);
 }
 
 bool ConfigManager::loggedIn()

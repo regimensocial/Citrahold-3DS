@@ -11,7 +11,7 @@
 #include "base64.h"
 #include "secureNetworkRequest.h"
 
-NetworkSystem::NetworkSystem() // std::string serverAddress, std::string token
+NetworkSystem::NetworkSystem() 
 {
 
 	network_init();
@@ -88,7 +88,7 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 				{
 					std::cout << "Failed to download file " << (element.value()) << std::endl;
 					std::cout << "HTTP Response: " << newResponse.first << std::endl;
-					
+
 					successfulSoFar = false;
 				}
 			}
@@ -125,7 +125,6 @@ menuItems NetworkSystem::getGamesMenuItems(UploadTypeEnum type)
 
 std::string NetworkSystem::getTokenFromShorthandToken(std::string shorthandToken)
 {
-	// we need to make {token: token}
 	nlohmann::json data;
 
 	data["shorthandToken"] = shorthandToken;
@@ -154,9 +153,6 @@ std::string NetworkSystem::verifyTokenToSetUserID(std::string fullToken)
 	responsePair response = sendRequest(this->serverAddress + "/getUserID", &data);
 	if (response.first == 200)
 	{
-		// we got a token
-		// debug output
-		// untested
 		this->token = fullToken;
 		return nlohmann::json::parse(response.second)["userID"];
 	}
