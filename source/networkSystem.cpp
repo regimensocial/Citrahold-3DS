@@ -11,7 +11,7 @@
 #include "base64.h"
 #include "secureNetworkRequest.h"
 
-NetworkSystem::NetworkSystem() 
+NetworkSystem::NetworkSystem()
 {
 
 	network_init();
@@ -63,34 +63,41 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 		bool successfulSoFar = true;
 
 		nlohmann::json responseJSON = nlohmann::json::parse(response.second);
+		int numberOfItems = responseJSON["files"].size();
+		int itemNumber = 0;
+
 		for (const auto &element : responseJSON["files"].items())
 		{
-			if (successfulSoFar)
+			if (!successfulSoFar)
 			{
-				std::cout << "Downloading file " << (element.value()) << std::endl;
-				responsePair newResponse;
-				data["file"] = element.value();
-				// http_post(
-				// 	(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves")).c_str(),
-				// 	data.dump().c_str(),
-				// 	&newResponse,
-				// 	(gamePath / "Citrahold-Download") / element.value());
+				break;
+			}
 
-				std::string address = this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves");
-				std::string jsonData = data.dump();
-				std::string downloadPath = (gamePath / "Citrahold-Download") / element.value();
+			itemNumber++;
 
-				newResponse = network_request(&address, &jsonData, &downloadPath);
+			std::cout << "[" << itemNumber << "/" << numberOfItems << "]" << " " << "DOWN " << (element.value()) << std::endl;
+			responsePair newResponse;
+			data["file"] = element.value();
+			// http_post(
+			// 	(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves")).c_str(),
+			// 	data.dump().c_str(),
+			// 	&newResponse,
+			// 	(gamePath / "Citrahold-Download") / element.value());
 
-				std::cout << ((gamePath / "Citrahold-Download") / element.value()).string() << std::endl;
-				std::cout << newResponse.first << std::endl;
-				if (newResponse.first != 200)
-				{
-					std::cout << "Failed to download file " << (element.value()) << std::endl;
-					std::cout << "HTTP Response: " << newResponse.first << std::endl;
+			std::string address = this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves");
+			std::string jsonData = data.dump();
+			std::string downloadPath = (gamePath / "Citrahold-Download") / element.value();
 
-					successfulSoFar = false;
-				}
+			newResponse = network_request(&address, &jsonData, &downloadPath);
+
+			std::cout << ((gamePath / "Citrahold-Download") / element.value()).string() << std::endl;
+			std::cout << newResponse.first << std::endl;
+			if (newResponse.first != 200)
+			{
+				std::cout << "Failed to download file " << (element.value()) << std::endl;
+				std::cout << "HTTP Response: " << newResponse.first << std::endl;
+
+				successfulSoFar = false;
 			}
 		}
 		return successfulSoFar;
@@ -121,7 +128,6 @@ menuItems NetworkSystem::getGamesMenuItems(UploadTypeEnum type)
 
 	return {};
 }
-
 
 std::string NetworkSystem::getTokenFromShorthandToken(std::string shorthandToken)
 {
@@ -173,6 +179,7 @@ int NetworkSystem::upload(UploadTypeEnum uploadType, std::string filePath, std::
 
 	// this will return a full token
 	responsePair response = sendRequest(this->serverAddress + (uploadType == UploadTypeEnum::SAVES ? "/uploadSaves" : "/UploadExtdata"), &data);
+
 	return response.first;
 }
 

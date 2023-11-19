@@ -12,7 +12,7 @@
 #include "menuSystem.h"
 #include "systemCore.h"
 
-// #include <malloc.h>    // for mallinfo() 
+// #include <malloc.h> // for mallinfo()
 
 int main()
 {
@@ -20,9 +20,12 @@ int main()
 
 	while (aptMainLoop())
 	{
-		
+
 		systemCore.handleInput();
 		systemCore.sceneRender();
+
+		// std::cout << std::endl
+		// 		  << " " << mallinfo().uordblks << " " << mallinfo().fordblks << " " << std::endl;
 
 		if (systemCore.isHalted())
 			break;

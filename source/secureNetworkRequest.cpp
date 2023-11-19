@@ -25,6 +25,7 @@ struct CallbackData
 {
 	FILE *fp;
 	int is_binary;
+	int writingCount;
 	std::string jsonResponse;
 };
 
@@ -56,20 +57,17 @@ size_t write_data(void *ptr, size_t size, size_t nmemb, void *userdata)
 
 	if (!data->is_binary)
 	{
-		if (DEBUG)
-			printf("not writing data\n");
-
 		data->jsonResponse.append(static_cast<char *>(ptr), size * nmemb);
-
 		return nmemb * size;
 	}
 
 	data->jsonResponse = "{}";
 
-	printf("Writing data!\n");
-
 	if (data->fp != nullptr)
 	{
+		data->writingCount++;
+
+		printf("Writing data! (%d/?)\n", data->writingCount);
 		size_t written = fwrite(ptr, size, nmemb, data->fp);
 		return written;
 	}
@@ -140,6 +138,8 @@ responsePair network_request(std::string *address, std::string *jsonData, std::s
 				{
 					std::filesystem::create_directories(parentPath);
 				}
+
+				data.writingCount = 0;
 
 				data.fp = fopen(downloadPath->c_str(), "wb");
 				if (!data.fp)
@@ -219,4 +219,22 @@ responsePair network_request(std::string *address, std::string *jsonData, std::s
 	}
 
 	return std::make_pair(0, "");
+}
+
+std::string url_encode(const std::string &decoded)
+{
+	const auto encoded_value = curl_easy_escape(nullptr, decoded.c_str(), static_cast<int>(decoded.length()));
+	std::string result(encoded_value);
+	curl_free(encoded_value);
+	return result;
+}
+
+// might not be needed
+std::string url_decode(const std::string& encoded)
+{
+    int output_length;
+    const auto decoded_value = curl_easy_unescape(nullptr, encoded.c_str(), static_cast<int>(encoded.length()), &output_length);
+    std::string result(decoded_value, output_length);
+    curl_free(decoded_value);
+    return result;
 }

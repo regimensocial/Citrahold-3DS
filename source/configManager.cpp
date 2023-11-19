@@ -42,8 +42,33 @@ ConfigManager::ConfigManager()
     {
         file.seekp(0);
 
+        // check all needed keys are present
+
+        bool updateNeeded = false;
+        if (!config.contains("serverAddress"))
+        {
+            config["serverAddress"] = "https://api.citrahold.com";
+            updateNeeded = true;
+        }
+        if (!config.contains("token"))
+        {
+            config["token"] = "";
+            updateNeeded = true;
+        }
+        if (!config.contains("deleteSaveAfterUpload"))
+        {
+            config["deleteSaveAfterUpload"] = "false";
+            updateNeeded = true;
+        }
+
         std::string fileContents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         config = nlohmann::json::parse(fileContents);
+
+        if (updateNeeded)
+        {
+            updateConfigFile(config);
+        }
+    
     }
 
     configDirectory = directoryPath;
@@ -277,7 +302,7 @@ std::string ConfigManager::getToken() const
 
 bool ConfigManager::getDeleteSaveAfterUpload() const
 {
-    return (config["deleteSaveAfterUpload"].dump() == "true");
+    return config["deleteSaveAfterUpload"];
 }
 
 void ConfigManager::setDeleteSaveAfterUpload(bool deleteSaveAfterUpload)

@@ -9,6 +9,7 @@
 #include "directoryMenu.h"
 #include "json.hpp"
 #include "helpers.h"
+#include "base64.h"
 
 SystemCore::SystemCore() : networkSystem()
 {
@@ -436,37 +437,139 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
             try
             {
-                int prevStatus = 0;
+                int prevStatus = -1;
                 std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
+                std::vector<std::filesystem::path> filesToUpload;
 
                 for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(savePath))
                 {
+                    // std::cout << std::filesystem::relative(dirEntry, savePath) << std::endl;
 
-                    if (std::filesystem::is_regular_file(dirEntry) && (prevStatus == 0 || prevStatus == 400)) // change to if not 201/200 in future???
+                    if (std::filesystem::is_regular_file(dirEntry)) // change to if not 201/200 in future???
                     {
                         std::filesystem::path fullPath = dirEntry.path();
-                        std::filesystem::path relativePath = std::filesystem::relative(dirEntry, savePath);
+                        filesToUpload.push_back(fullPath);
+                    }
 
-                        prevStatus = networkSystem.upload(currentUploadType, currentGameID / relativePath, networkSystem.getBase64StringFromFile(fullPath.string(), relativePath.string()));
-                        std::cout << "HTTP " << prevStatus << std::endl;
+                    // else if (std::filesystem::is_directory(dirEntry))
+                    // {
+                    //     std::filesystem::path fullPath = dirEntry.path();
+                    //     std::filesystem::path relativePath = std::filesystem::relative(dirEntry, savePath);
+
+                    //     std::cout << (currentGameID / relativePath) << std::endl;
+
+                    //     prevStatus = networkSystem.upload(currentUploadType, (currentGameID / relativePath / "citraholdDirectoryDummy"), "citraholdDirectoryDummy");
+                    //     std::cout << "HTTP " << prevStatus << std::endl;
+                    // }
+                }
+
+                // FOR LOOP THROUGH filesToUpload
+
+                for (unsigned int i = 0; i < filesToUpload.size(); i++)
+                {
+                    if (prevStatus != -1 && prevStatus != 201 && prevStatus != 200)
+                    {
+                        std::cout << "Upload failed. HTTP " << prevStatus << std::endl;
+                        break;
+                    }
+
+                    std::filesystem::path relativePath = std::filesystem::relative(filesToUpload[i], savePath);
+
+                    std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                              << " UP " << (currentGameID / relativePath) << std::endl;
+
+                    std::string base64Data = networkSystem.getBase64StringFromFile(filesToUpload[i], relativePath);
+                    std::string filePath = (currentGameID / relativePath).string();
+
+                    prevStatus = networkSystem.upload(currentUploadType, filePath, base64Data);
+
+                    std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                              << " HTTP " << prevStatus << std::endl;
+
+                    if ((prevStatus == 201 || prevStatus == 200) && configManager.getDeleteSaveAfterUpload())
+                    {
+                        std::filesystem::remove(filesToUpload[i]);
                     }
                 }
+
+                std::cout << "All files processed." << std::endl;
 
                 if (prevStatus == 201 || prevStatus == 200)
                 {
                     if (configManager.getDeleteSaveAfterUpload())
                     {
-                        std::filesystem::remove_all(savePath);
-                        std::cout << "Deleted save." << std::endl;
+                        std::cout << "Deleting save..." << std::endl;
+                        std::cout << savePath << std::endl;
+
+                        // Attempt to remove the directory
+                        // std::filesystem::remove_all(savePath);
+
+                        // Check if the removal was successful
+                        try
+                        {
+                            for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(savePath))
+                            {
+
+                                std::filesystem::path fullPath = dirEntry.path();
+                                std::filesystem::remove(fullPath);
+                            }
+
+                            std::filesystem::remove(savePath);
+                        }
+                        catch (std::exception &e)
+                        {
+                            std::cout << e.what() << std::endl;
+                        }
+                        catch (...)
+                        {
+                            std::cout << "Unknown error" << std::endl;
+                        }
                     }
 
                     std::cout << "Upload successful" << std::endl;
 
                     menuSystem.changeMenu(selection, currentMenuItems, mainMenuItems, previousMenus);
                 }
-                else if (prevStatus == 0)
+                else if (prevStatus == 0 || prevStatus == -1)
                 {
-                    std::cout << "Upload failed. Is there anything to upload? (or could network be offline?)" << std::endl;
+                    if (filesToUpload.size() == 0)
+                    {
+                        std::cout << "This is an empty directory" << std::endl;
+                        if (configManager.getDeleteSaveAfterUpload())
+                        {
+                            std::cout << "Deleting save..." << std::endl;
+                            std::cout << savePath << std::endl;
+
+                            // Attempt to remove the directory
+                            // std::filesystem::remove_all(savePath);
+
+                            // Check if the removal was successful
+                            try
+                            {
+                                for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(savePath))
+                                {
+
+                                    std::filesystem::path fullPath = dirEntry.path();
+                                    std::filesystem::remove(fullPath);
+                                }
+
+                                std::filesystem::remove(savePath);
+                            }
+                            catch (std::exception &e)
+                            {
+                                std::cout << e.what() << std::endl;
+                            }
+                            catch (...)
+                            {
+                                std::cout << "Unknown error" << std::endl;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        std::cout << "HTTP " << prevStatus << std::endl;
+                        std::cout << "Upload failed. Is there anything to upload? (or could network be offline?)" << std::endl;
+                    }
                 }
                 else
                 {
@@ -485,6 +588,12 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
         {
             currentUploadType = UploadTypeEnum::SAVES;
             downloadGameMenuItems = networkSystem.getGamesMenuItems(UploadTypeEnum::SAVES);
+            if (downloadGameMenuItems.size() == 0)
+            {
+                std::cout << "No saves found" << std::endl;
+                break;
+            }
+
             menuSystem.changeMenu(selection, currentMenuItems, downloadGameMenuItems, previousMenus, false);
             break;
         }
@@ -493,6 +602,12 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
         {
             currentUploadType = UploadTypeEnum::EXTDATA;
             downloadGameMenuItems = networkSystem.getGamesMenuItems(UploadTypeEnum::EXTDATA);
+            if (downloadGameMenuItems.size() == 0)
+            {
+                std::cout << "No saves found" << std::endl;
+                break;
+            }
+
             menuSystem.changeMenu(selection, currentMenuItems, downloadGameMenuItems, previousMenus, false);
             break;
         }
@@ -683,7 +798,6 @@ void SystemCore::sceneRender()
     C2D_TextBufClear(*menuSystem.getMenuTextBuf());
     C2D_TextBufClear(selectorBuf);
     C2D_DrawText(menuSystem.getMenuText(), 0, 38.0f, 16.0f, 0.5f, size, size);
-
 
     C2D_Text dynText;
 
