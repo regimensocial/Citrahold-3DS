@@ -451,16 +451,18 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                         filesToUpload.push_back(fullPath);
                     }
 
-                    // else if (std::filesystem::is_directory(dirEntry))
-                    // {
-                    //     std::filesystem::path fullPath = dirEntry.path();
-                    //     std::filesystem::path relativePath = std::filesystem::relative(dirEntry, savePath);
+                    else if (std::filesystem::is_directory(dirEntry))
+                    {
+                        std::filesystem::path fullPath = dirEntry.path();
+                        std::filesystem::path relativePath = std::filesystem::relative(dirEntry, savePath);
 
-                    //     std::cout << (currentGameID / relativePath) << std::endl;
+                        std::cout << (currentGameID / relativePath) << std::endl;
 
-                    //     prevStatus = networkSystem.upload(currentUploadType, (currentGameID / relativePath / "citraholdDirectoryDummy"), "citraholdDirectoryDummy");
-                    //     std::cout << "HTTP " << prevStatus << std::endl;
-                    // }
+                        std::cout << "Creating directory " << (currentGameID / relativePath) << std::endl;
+
+                        prevStatus = networkSystem.upload(currentUploadType, (currentGameID / relativePath / "citraholdDirectoryDummy"), "citraholdDirectoryDummy");
+                        std::cout << "HTTP " << prevStatus << std::endl;
+                    }
                 }
 
                 // FOR LOOP THROUGH filesToUpload
@@ -488,7 +490,19 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
                     if ((prevStatus == 201 || prevStatus == 200) && configManager.getDeleteSaveAfterUpload())
                     {
-                        std::filesystem::remove(filesToUpload[i]);
+                        try
+                        {
+
+                            std::filesystem::remove(filesToUpload[i]);
+                        } 
+                        catch (std::exception &e)
+                        {
+                            std::cout << e.what() << std::endl;
+                        }
+                        catch (...)
+                        {
+                            std::cout << "Unknown error" << std::endl;
+                        }
                     }
                 }
 
@@ -526,7 +540,7 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                         }
                     }
 
-                    std::cout << "Upload successful" << std::endl;
+                    std::cout << "Upload fully successful (complete!)" << std::endl;
 
                     menuSystem.changeMenu(selection, currentMenuItems, mainMenuItems, previousMenus);
                 }
@@ -628,7 +642,7 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
             std::cout << "Downloading " << currentGameID << " to " << gamePath << std::endl;
             bool downloadSuccessful = networkSystem.download(currentUploadType, currentGameID, gamePath);
-            std::cout << (downloadSuccessful ? "Download successful" : "Download failed") << std::endl;
+            std::cout << (downloadSuccessful ? "Download fully successful (complete!)" : "Download failed") << std::endl;
 
             break;
         }

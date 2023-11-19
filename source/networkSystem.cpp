@@ -98,6 +98,12 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 				std::cout << "HTTP Response: " << newResponse.first << std::endl;
 
 				successfulSoFar = false;
+			} else {
+				std::cout << "Downloaded file " << (element.value()) << std::endl;
+				if (downloadPath.find("citraholdDirectoryDummy") != std::string::npos) {
+					std::filesystem::remove(downloadPath);
+					std::cout << "Dummy file removed" << std::endl;
+				}
 			}
 		}
 		return successfulSoFar;

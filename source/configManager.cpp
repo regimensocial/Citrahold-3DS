@@ -302,7 +302,12 @@ std::string ConfigManager::getToken() const
 
 bool ConfigManager::getDeleteSaveAfterUpload() const
 {
-    return config["deleteSaveAfterUpload"];
+    if (!config.contains("deleteSaveAfterUpload"))
+    {
+        return false;
+    }
+
+    return config["deleteSaveAfterUpload"].dump() == "true";
 }
 
 void ConfigManager::setDeleteSaveAfterUpload(bool deleteSaveAfterUpload)
