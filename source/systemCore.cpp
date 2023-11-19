@@ -436,10 +436,10 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
             std::cout << "Upload started..." << std::endl;
 
             // make jsonArray called multiUpload
-            // nlohmann::json multiUpload;
-            // multiUpload["token"] = configManager.getToken();
-            // multiUpload["game"] = currentGameID;
-            // multiUpload["multi"] = nlohmann::json::array();
+            nlohmann::json multiUpload;
+            multiUpload["token"] = configManager.getToken();
+            multiUpload["game"] = currentGameID;
+            multiUpload["multi"] = nlohmann::json::array();
 
             try
             {
@@ -474,11 +474,11 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
                 for (unsigned int i = 0; i < filesToUpload.size(); i++)
                 {
-                    if (prevStatus != -1 && prevStatus != 201 && prevStatus != 200)
-                    {
-                        std::cout << "Upload failed. HTTP " << prevStatus << std::endl;
-                        break;
-                    }
+                    // if (prevStatus != -1 && prevStatus != 201 && prevStatus != 200)
+                    // {
+                    //     std::cout << "Upload failed. HTTP " << prevStatus << std::endl;
+                    //     break;
+                    // }
 
                     std::string base64Data = "";
                     std::string filePath = "";
@@ -489,60 +489,83 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                         base64Data = "citraholdDirectoryDummy";
                         filePath = filesToUpload[i];
 
-                        std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
-                                  << " UP " << (filePath) << std::endl;
+                        // std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                        //           << " UP " << (filePath) << std::endl;
                     }
                     else
                     {
                         std::filesystem::path relativePath = std::filesystem::relative(filesToUpload[i], savePath);
 
-                        std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
-                                  << " UP " << (currentGameID / relativePath) << std::endl;
+                        // std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                        //           << " UP " << (currentGameID / relativePath) << std::endl;
 
                         base64Data = networkSystem.getBase64StringFromFile(filesToUpload[i], relativePath);
                         filePath = (currentGameID / relativePath).string();
                     }
 
-                    int newStatus = -1;
-                    int attempts = 0;
+                    nlohmann::json entry = nlohmann::json::array();
+                    entry.push_back(filePath);
+                    entry.push_back(base64Data);
 
-                    while (newStatus != 201 && newStatus != 200 && attempts <= 3)
-                    {
-                        newStatus = networkSystem.upload(currentUploadType, filePath, base64Data);
+                    multiUpload["multi"].push_back(entry);
 
-                        if (attempts > 0)
-                        {
-                            std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
-                                      << " Retrying... (attempt " << attempts << ")" << std::endl;
-                        }
+                    // int newStatus = -1;
+                    // int attempts = 0;
 
-                        std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
-                                  << " HTTP " << newStatus << std::endl;
+                    // while (newStatus != 201 && newStatus != 200 && attempts <= 3)
+                    // {
+                    //     newStatus = networkSystem.upload(currentUploadType, filePath, base64Data);
 
-                        attempts++;
-                    }
+                    //     if (attempts > 0)
+                    //     {
+                    //         std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                    //                   << " Retrying... (attempt " << attempts << ")" << std::endl;
+                    //     }
 
-                    prevStatus = newStatus;
+                    //     std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                    //               << " HTTP " << newStatus << std::endl;
 
-                    if ((prevStatus == 201 || prevStatus == 200) && configManager.getDeleteSaveAfterUpload())
-                    {
-                        try
-                        {
+                    //     attempts++;
+                    // }
 
-                            std::filesystem::remove(filesToUpload[i]);
-                        }
-                        catch (std::exception &e)
-                        {
-                            std::cout << e.what() << std::endl;
-                        }
-                        catch (...)
-                        {
-                            std::cout << "Unknown error" << std::endl;
-                        }
-                    }
+                    // prevStatus = newStatus;
+
+                    // if ((prevStatus == 201 || prevStatus == 200) && configManager.getDeleteSaveAfterUpload())
+                    // {
+                    //     try
+                    //     {
+
+                    //         std::filesystem::remove(filesToUpload[i]);
+                    //     }
+                    //     catch (std::exception &e)
+                    //     {
+                    //         std::cout << e.what() << std::endl;
+                    //     }
+                    //     catch (...)
+                    //     {
+                    //         std::cout << "Unknown error" << std::endl;
+                    //     }
+                    // }
                 }
 
                 std::cout << "All files processed." << std::endl;
+
+                int attempts = 0;
+                while (prevStatus != 201 && prevStatus != 200 && attempts <= 3)
+                {
+                    prevStatus = networkSystem.uploadMultiple(currentUploadType, multiUpload);
+
+                    if (attempts > 0)
+                    {
+                        std::cout << "Retrying... (attempt " << attempts << ")" << std::endl;
+                    }
+
+                    std::cout << "HTTP " << prevStatus << std::endl;
+
+                    attempts++;
+                }
+
+                multiUpload.clear();
 
                 if (prevStatus == 201 || prevStatus == 200)
                 {

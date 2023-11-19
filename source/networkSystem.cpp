@@ -75,7 +75,9 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 
 			itemNumber++;
 
-			std::cout << "[" << itemNumber << "/" << numberOfItems << "]" << " " << "DOWN " << (element.value()) << std::endl;
+			std::cout << "[" << itemNumber << "/" << numberOfItems << "]"
+					  << " "
+					  << "DOWN " << (element.value()) << std::endl;
 			responsePair newResponse;
 			data["file"] = element.value();
 			// http_post(
@@ -98,9 +100,12 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 				std::cout << "HTTP Response: " << newResponse.first << std::endl;
 
 				successfulSoFar = false;
-			} else {
+			}
+			else
+			{
 				std::cout << "Downloaded file " << (element.value()) << std::endl;
-				if (downloadPath.find("citraholdDirectoryDummy") != std::string::npos) {
+				if (downloadPath.find("citraholdDirectoryDummy") != std::string::npos)
+				{
 					std::filesystem::remove(downloadPath);
 					std::cout << "Dummy file removed" << std::endl;
 				}
@@ -173,6 +178,12 @@ std::string NetworkSystem::verifyTokenToSetUserID(std::string fullToken)
 		std::cout << "Failed to verify token\n";
 		return "invalid";
 	}
+}
+
+int NetworkSystem::uploadMultiple(UploadTypeEnum uploadType, nlohmann::json jsonObject)
+{
+	responsePair response = sendRequest(this->serverAddress + (uploadType == UploadTypeEnum::SAVES ? "/uploadMultiSaves" : "/uploadMultiExtdata"), &jsonObject);
+	return response.first;
 }
 
 int NetworkSystem::upload(UploadTypeEnum uploadType, std::string filePath, std::string base64Data)

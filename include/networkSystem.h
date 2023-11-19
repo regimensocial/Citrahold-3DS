@@ -18,6 +18,7 @@ public:
     std::string verifyTokenToSetUserID(std::string fullToken);
 
     int upload(UploadTypeEnum uploadType, std::string filePath, std::string base64Data);
+    int uploadMultiple(UploadTypeEnum uploadType, nlohmann::json jsonObject);
 
     void cleanExit();
 
