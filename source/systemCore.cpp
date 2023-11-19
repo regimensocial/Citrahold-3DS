@@ -435,6 +435,12 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
             std::cout << "Upload started..." << std::endl;
 
+            // make jsonArray called multiUpload
+            // nlohmann::json multiUpload;
+            // multiUpload["token"] = configManager.getToken();
+            // multiUpload["game"] = currentGameID;
+            // multiUpload["multi"] = nlohmann::json::array();
+
             try
             {
                 int prevStatus = -1;
@@ -456,12 +462,11 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                         std::filesystem::path fullPath = dirEntry.path();
                         std::filesystem::path relativePath = std::filesystem::relative(dirEntry, savePath);
 
-                        std::cout << (currentGameID / relativePath) << std::endl;
+                        // std::cout << "Creating directory " << (currentGameID / relativePath) << std::endl;
+                        filesToUpload.push_back((currentGameID / relativePath / "citraholdDirectoryDummy"));
 
-                        std::cout << "Creating directory " << (currentGameID / relativePath) << std::endl;
-
-                        prevStatus = networkSystem.upload(currentUploadType, (currentGameID / relativePath / "citraholdDirectoryDummy"), "citraholdDirectoryDummy");
-                        std::cout << "HTTP " << prevStatus << std::endl;
+                        // prevStatus = networkSystem.upload(currentUploadType, (currentGameID / relativePath / "citraholdDirectoryDummy"), "citraholdDirectoryDummy");
+                        // std::cout << "HTTP " << prevStatus << std::endl;
                     }
                 }
 
@@ -475,18 +480,49 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                         break;
                     }
 
-                    std::filesystem::path relativePath = std::filesystem::relative(filesToUpload[i], savePath);
+                    std::string base64Data = "";
+                    std::string filePath = "";
 
-                    std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
-                              << " UP " << (currentGameID / relativePath) << std::endl;
+                    if (filesToUpload[i].string().find("citraholdDirectoryDummy") != std::string::npos)
+                    {
 
-                    std::string base64Data = networkSystem.getBase64StringFromFile(filesToUpload[i], relativePath);
-                    std::string filePath = (currentGameID / relativePath).string();
+                        base64Data = "citraholdDirectoryDummy";
+                        filePath = filesToUpload[i];
 
-                    prevStatus = networkSystem.upload(currentUploadType, filePath, base64Data);
+                        std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                                  << " UP " << (filePath) << std::endl;
+                    }
+                    else
+                    {
+                        std::filesystem::path relativePath = std::filesystem::relative(filesToUpload[i], savePath);
 
-                    std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
-                              << " HTTP " << prevStatus << std::endl;
+                        std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                                  << " UP " << (currentGameID / relativePath) << std::endl;
+
+                        base64Data = networkSystem.getBase64StringFromFile(filesToUpload[i], relativePath);
+                        filePath = (currentGameID / relativePath).string();
+                    }
+
+                    int newStatus = -1;
+                    int attempts = 0;
+
+                    while (newStatus != 201 && newStatus != 200 && attempts <= 3)
+                    {
+                        newStatus = networkSystem.upload(currentUploadType, filePath, base64Data);
+
+                        if (attempts > 0)
+                        {
+                            std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                                      << " Retrying... (attempt " << attempts << ")" << std::endl;
+                        }
+
+                        std::cout << "[" << (i + 1) << "/" << filesToUpload.size() << "]"
+                                  << " HTTP " << newStatus << std::endl;
+
+                        attempts++;
+                    }
+
+                    prevStatus = newStatus;
 
                     if ((prevStatus == 201 || prevStatus == 200) && configManager.getDeleteSaveAfterUpload())
                     {
@@ -494,7 +530,7 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                         {
 
                             std::filesystem::remove(filesToUpload[i]);
-                        } 
+                        }
                         catch (std::exception &e)
                         {
                             std::cout << e.what() << std::endl;
@@ -521,14 +557,16 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                         // Check if the removal was successful
                         try
                         {
-                            for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(savePath))
+                            if (std::filesystem::exists(savePath))
                             {
+                                for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(savePath))
+                                {
+                                    std::filesystem::path fullPath = dirEntry.path();
+                                    std::filesystem::remove(fullPath);
+                                }
 
-                                std::filesystem::path fullPath = dirEntry.path();
-                                std::filesystem::remove(fullPath);
+                                std::filesystem::remove(savePath);
                             }
-
-                            std::filesystem::remove(savePath);
                         }
                         catch (std::exception &e)
                         {
@@ -560,14 +598,21 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                             // Check if the removal was successful
                             try
                             {
-                                for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(savePath))
+                                if (std::filesystem::exists(savePath))
                                 {
 
-                                    std::filesystem::path fullPath = dirEntry.path();
-                                    std::filesystem::remove(fullPath);
-                                }
+                                    for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(savePath))
+                                    {
+                                        std::filesystem::path fullPath = dirEntry.path();
 
-                                std::filesystem::remove(savePath);
+                                        // check if exists first
+                                        if (std::filesystem::exists(fullPath))
+                                            std::filesystem::remove(fullPath);
+                                    }
+
+                                    if (std::filesystem::exists(savePath))
+                                        std::filesystem::remove(savePath);
+                                }
                             }
                             catch (std::exception &e)
                             {
