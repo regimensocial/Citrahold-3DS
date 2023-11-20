@@ -96,29 +96,31 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 				std::filesystem::create_directories(parentPath);
 			}
 
-			std::ofstream file(downloadPath, std::ios::binary);
+			if (filename.find("citraholdDirectoryDummy") == std::string::npos)
+			{
 
-			if (!file)
-			{
-				std::cout << "[" << itemNumber << "/" << numberOfItems << "] "
-						  << "Failed to open file (" << downloadPath << ")\n";
-				successfulSoFar = false;
-			}
-			else
-			{
-				// check if filename contains "citraholdDirectoryDummy"
-				if (filename.find("citraholdDirectoryDummy") == std::string::npos)
+				std::ofstream file(downloadPath, std::ios::binary);
+
+				if (!file)
 				{
+					std::cout << "[" << itemNumber << "/" << numberOfItems << "] "
+							  << "Failed to open file (" << downloadPath << ")\n";
+					successfulSoFar = false;
+				}
+				else
+				{
+					// check if filename contains "citraholdDirectoryDummy"
+
 					std::cout << "[" << itemNumber << "/" << numberOfItems << "] "
 							  << "Writing " << filename << "\n";
 					file.write((char *)base64DataDecoded.data(), base64DataDecoded.size());
 					file.close();
 				}
-				else
-				{
-					std::cout << "[" << itemNumber << "/" << numberOfItems << "] "
-							  << "Ignoring dummy file " << filename << "\n";
-				}
+			}
+			else
+			{
+				std::cout << "[" << itemNumber << "/" << numberOfItems << "] "
+						  << "Ignoring dummy file " << filename << "\n";
 			}
 		}
 
