@@ -11,6 +11,18 @@
 #include "helpers.h"
 #include "base64.h"
 
+#ifndef VERSION_MAJOR
+#define VERSION_MAJOR 0
+#endif
+
+#ifndef VERSION_MINOR
+#define VERSION_MINOR 0
+#endif
+
+#ifndef VERSION_MICRO
+#define VERSION_MICRO 0
+#endif
+
 SystemCore::SystemCore() : networkSystem()
 {
     gfxInitDefault();
@@ -83,6 +95,8 @@ void SystemCore::checkServerConnection()
             std::cout << "Please go to Settings and input\na shorthand token!" << std::endl;
         }
     }
+
+    std::cout << std::endl << "You're using Citrahold-3DS v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_MICRO << std::endl;
 }
 
 void SystemCore::handleFunction(menuFunctions function, unsigned int key)

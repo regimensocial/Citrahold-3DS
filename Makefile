@@ -70,7 +70,7 @@ ICON_FLAGS          :=	nosavebackups,visible
 
 VERSION_MAJOR := 1
 VERSION_MINOR := 0
-VERSION_MICRO := 0
+VERSION_MICRO := 2
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -83,7 +83,7 @@ CFLAGS	:=	-g -Wall -O2 -mword-relocations \
 
 CFLAGS	+=	$(INCLUDE) -D__3DS__ -Wall -Wextra -Wno-psabi -Wno-unused-parameter
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -std=gnu++17
+CXXFLAGS	:=  -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION_MINOR=$(VERSION_MINOR) -DVERSION_MICRO=$(VERSION_MICRO) $(CFLAGS) -fno-rtti -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
