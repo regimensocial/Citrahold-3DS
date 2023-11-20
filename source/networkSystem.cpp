@@ -10,6 +10,7 @@
 #include "json.hpp"
 #include "base64.h"
 #include "secureNetworkRequest.h"
+#include "helpers.h"
 
 NetworkSystem::NetworkSystem()
 {
@@ -56,6 +57,8 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 	nlohmann::json data;
 	data["token"] = this->token;
 	data["game"] = gameID;
+
+	safeDirectoryRemove(gamePath / "Citrahold-Download");
 
 	responsePair response = sendRequest(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves"), &data);
 	if (response.first == 200)
