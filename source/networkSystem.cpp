@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <inttypes.h>
+#include <filesystem>
 #include "json.hpp"
 #include "base64.h"
 #include "secureNetworkRequest.h"
@@ -60,7 +61,7 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 
 	safeDirectoryRemove(gamePath / "Citrahold-Download");
 
-	responsePair response = sendRequest(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves"), &data);
+	responsePair response = sendRequest(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadMultiExtdata" : "/downloadMultiSaves"), &data);
 	if (response.first == 200)
 	{
 		bool successfulSoFar = true;
@@ -69,6 +70,8 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 		int numberOfItems = responseJSON["files"].size();
 		int itemNumber = 0;
 
+		std::cout << "Retrieved " << numberOfItems << " files\n";
+
 		for (const auto &element : responseJSON["files"].items())
 		{
 			if (!successfulSoFar)
@@ -76,44 +79,49 @@ bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::files
 				break;
 			}
 
+			// element [0] = filename
+			// element [1] = base64 data
 			itemNumber++;
+			std::string filename = element.value()[0];
+			std::string base64Data = element.value()[1];
 
-			std::cout << "[" << itemNumber << "/" << numberOfItems << "]"
-					  << " "
-					  << "DOWN " << (element.value()) << std::endl;
-			responsePair newResponse;
-			data["file"] = element.value();
-			// http_post(
-			// 	(this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves")).c_str(),
-			// 	data.dump().c_str(),
-			// 	&newResponse,
-			// 	(gamePath / "Citrahold-Download") / element.value());
+			std::filesystem::path downloadPath = (gamePath / "Citrahold-Download" / filename).string();
+			std::vector<uint8_t> base64DataDecoded = base64_decode(base64Data);
 
-			std::string address = this->serverAddress + (type == UploadTypeEnum::EXTDATA ? "/downloadExtdata" : "/downloadSaves");
-			std::string jsonData = data.dump();
-			std::string downloadPath = (gamePath / "Citrahold-Download") / element.value();
+			// write the file
+			std::filesystem::path parentPath = downloadPath.parent_path();
 
-			newResponse = network_request(&address, &jsonData, &downloadPath);
-
-			std::cout << ((gamePath / "Citrahold-Download") / element.value()).string() << std::endl;
-			std::cout << newResponse.first << std::endl;
-			if (newResponse.first != 200)
+			if (!std::filesystem::exists(parentPath))
 			{
-				std::cout << "Failed to download file " << (element.value()) << std::endl;
-				std::cout << "HTTP Response: " << newResponse.first << std::endl;
+				std::filesystem::create_directories(parentPath);
+			}
 
+			std::ofstream file(downloadPath, std::ios::binary);
+
+			if (!file)
+			{
+				std::cout << "[" << itemNumber << "/" << numberOfItems << "] "
+						  << "Failed to open file (" << downloadPath << ")\n";
 				successfulSoFar = false;
 			}
 			else
 			{
-				std::cout << "Downloaded file " << (element.value()) << std::endl;
-				if (downloadPath.find("citraholdDirectoryDummy") != std::string::npos)
+				// check if filename contains "citraholdDirectoryDummy"
+				if (filename.find("citraholdDirectoryDummy") == std::string::npos)
 				{
-					std::filesystem::remove(downloadPath);
-					std::cout << "Dummy file removed" << std::endl;
+					std::cout << "[" << itemNumber << "/" << numberOfItems << "] "
+							  << "Writing " << filename << "\n";
+					file.write((char *)base64DataDecoded.data(), base64DataDecoded.size());
+					file.close();
+				}
+				else
+				{
+					std::cout << "[" << itemNumber << "/" << numberOfItems << "] "
+							  << "Ignoring dummy file " << filename << "\n";
 				}
 			}
 		}
+
 		return successfulSoFar;
 	}
 	return false;

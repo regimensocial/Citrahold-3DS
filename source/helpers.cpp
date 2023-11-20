@@ -26,30 +26,23 @@ void safeDirectoryRemove(const std::filesystem::path &path)
 
     try
     {
-        // Iterate over each entry in the directory
         for (const auto &entry : std::filesystem::directory_iterator(path))
         {
             if (std::filesystem::is_regular_file(entry.path()))
             {
-                // Remove the file
                 std::filesystem::remove(entry.path());
-                std::cout << "Deleted: " << entry.path() << std::endl;
             }
             else if (std::filesystem::is_directory(entry.path()))
             {
-                // Recursive call for subdirectories
                 safeDirectoryRemove(entry.path());
             }
         }
 
         for (const auto &entry : std::filesystem::directory_iterator(path))
         {
-            // Check if it is a regular file
             if (std::filesystem::is_regular_file(entry.path()))
             {
-                // Remove the file
                 std::filesystem::remove(entry.path());
-                std::cout << "Deleted: " << entry.path() << std::endl;
             }
         }
 
