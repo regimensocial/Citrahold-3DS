@@ -24,7 +24,6 @@ NetworkSystem::NetworkSystem()
 responsePair NetworkSystem::init(std::string serverAddress, std::string token)
 {
 	this->serverAddress = serverAddress;
-	this->token = token;
 
 	return sendRequest(this->serverAddress + "/areyouawake");
 }
