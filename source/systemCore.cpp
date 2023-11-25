@@ -9,6 +9,7 @@
 #include "directoryMenu.h"
 #include "json.hpp"
 #include "helpers.h"
+#include <regex>
 #include "base64.h"
 
 #ifndef VERSION_MAJOR
@@ -82,11 +83,13 @@ void SystemCore::checkServerConnection()
             std::string userID = networkSystem.verifyTokenToSetUserID(configManager.getToken());
             if (userID != "invalid")
             {
+                networkSystem.loggedIn = true;
                 std::cout << "Successfully authenticated as user\n"
                           << userID << std::endl;
             }
             else
             {
+                networkSystem.loggedIn = false;
                 std::cout << "Invalid token currently saved." << std::endl;
             }
         }
@@ -96,7 +99,8 @@ void SystemCore::checkServerConnection()
         }
     }
 
-    std::cout << std::endl << "You're using Citrahold-3DS v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_MICRO << std::endl;
+    std::cout << std::endl
+              << "You're using Citrahold-3DS v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_MICRO << std::endl;
 }
 
 void SystemCore::handleFunction(menuFunctions function, unsigned int key)
@@ -455,6 +459,8 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
             multiUpload["game"] = currentGameID;
             multiUpload["multi"] = nlohmann::json::array();
 
+            std::uintmax_t totalFileSize = 0;
+
             try
             {
                 int prevStatus = -1;
@@ -468,6 +474,14 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                     {
                         std::filesystem::path fullPath = dirEntry.path();
                         filesToUpload.push_back(fullPath);
+
+                        totalFileSize += std::filesystem::file_size(fullPath);
+
+                        if (totalFileSize > 128000000) // magic number needs to be sorted at some point
+                        {
+                            std::cout << "File size too large for upload (over 128MB)" << std::endl;
+                            return;
+                        }
 
                         std::cout << "Added " << (currentGameID / std::filesystem::relative(dirEntry, savePath)) << std::endl;
                     }
@@ -496,7 +510,11 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                     }
                     else
                     {
+
                         std::filesystem::path relativePath = std::filesystem::relative(filesToUpload[i], savePath);
+                        std::cout << "[" << i + 1 << "/" << filesToUpload.size() << "] "
+                                  << "Encoding " << relativePath << std::endl;
+
                         base64Data = networkSystem.getBase64StringFromFile(filesToUpload[i], relativePath);
                         filePath = (currentGameID / relativePath).string();
                     }
@@ -510,7 +528,7 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
                 if (multiUpload["multi"].size() > 0)
                 {
-                    std::cout << "All files processed.\nUpload starting soon." << std::endl;
+                    std::cout << "All files encoded.\nUpload starting soon." << std::endl;
 
                     int attempts = 0;
                     while (prevStatus != 201 && prevStatus != 200 && attempts <= 3)
@@ -840,6 +858,13 @@ static SwkbdCallbackResult KeyboardCallback(void *user, const char **ppMessage, 
     //     *ppMessage = "Nice try but I'm not letting you use that meme right now";
     //     return SWKBD_CALLBACK_CONTINUE;
     // }
+
+    std::regex regex("^[a-zA-Z0-9_]+$");
+    if (!(std::string(text).length() <= 32 && std::regex_match(text, regex)))
+    {
+        *ppMessage = "Please enter a valid ID (alphanumeric and underscores only)";
+        return SWKBD_CALLBACK_CONTINUE;
+    }
 
     return SWKBD_CALLBACK_OK;
 }

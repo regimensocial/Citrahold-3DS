@@ -17,7 +17,6 @@ public:
     std::string getTokenFromShorthandToken(std::string shorthandToken);
     std::string verifyTokenToSetUserID(std::string fullToken);
 
-    int upload(UploadTypeEnum uploadType, std::string filePath, std::string base64Data);
     int uploadMultiple(UploadTypeEnum uploadType, nlohmann::json jsonObject);
 
     void cleanExit();
@@ -26,7 +25,7 @@ public:
     menuItems getGamesMenuItems(UploadTypeEnum type);
     std::string getBase64StringFromFile(std::string fullFilePath, std::string filename);
     bool download(UploadTypeEnum type, std::string gameID, std::filesystem::path gamePath);
-    
+    bool loggedIn = false;
 
 private:
     std::string serverAddress;

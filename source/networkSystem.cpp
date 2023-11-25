@@ -55,6 +55,12 @@ std::string NetworkSystem::getBase64StringFromFile(std::string fullFilePath, std
 
 bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::filesystem::path gamePath)
 {
+	if (!loggedIn)
+	{
+		std::cout << "Not logged in\n";
+		return 0;
+	}
+
 	nlohmann::json data;
 	data["token"] = this->token;
 	data["game"] = gameID;
@@ -176,6 +182,7 @@ std::string NetworkSystem::getTokenFromShorthandToken(std::string shorthandToken
 
 std::string NetworkSystem::verifyTokenToSetUserID(std::string fullToken)
 {
+	
 	nlohmann::json data;
 
 	data["token"] = fullToken;
@@ -195,21 +202,13 @@ std::string NetworkSystem::verifyTokenToSetUserID(std::string fullToken)
 
 int NetworkSystem::uploadMultiple(UploadTypeEnum uploadType, nlohmann::json jsonObject)
 {
+	if (!loggedIn)
+	{
+		std::cout << "Not logged in\n";
+		return 0;
+	}
+
 	responsePair response = sendRequest(this->serverAddress + (uploadType == UploadTypeEnum::SAVES ? "/uploadMultiSaves" : "/uploadMultiExtdata"), &jsonObject);
-	return response.first;
-}
-
-int NetworkSystem::upload(UploadTypeEnum uploadType, std::string filePath, std::string base64Data)
-{
-	nlohmann::json data;
-
-	data["data"] = base64Data;
-	data["filename"] = filePath;
-	data["token"] = this->token;
-
-	// this will return a full token
-	responsePair response = sendRequest(this->serverAddress + (uploadType == UploadTypeEnum::SAVES ? "/uploadSaves" : "/UploadExtdata"), &data);
-
 	return response.first;
 }
 
