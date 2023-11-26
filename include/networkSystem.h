@@ -18,6 +18,7 @@ public:
     std::string verifyTokenToSetUserID(std::string fullToken);
 
     int uploadMultiple(UploadTypeEnum uploadType, nlohmann::json jsonObject);
+    void checkVersion(std::string currentVersion);
 
     void cleanExit();
 

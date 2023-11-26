@@ -10,6 +10,8 @@
 #include <3ds.h>
 #include <exception>
 #include <filesystem>
+#include <chrono>
+
 #include "secureNetworkRequest.h"
 #include "lets_encrypt_rootca.h"
 
@@ -75,6 +77,15 @@ size_t write_data(void *ptr, size_t size, size_t nmemb, void *userdata)
 	return 0;
 }
 
+bool valid_certificate()
+{
+	auto now = std::chrono::system_clock::now();
+	auto now_time_t = std::chrono::system_clock::to_time_t(now);
+	std::tm *now_tm = std::localtime(&now_time_t);
+
+	return !(now_tm->tm_year + 1900 >= YEAR_EXPIRY && now_tm->tm_mon >= (MONTH_EXPIRY - 1));
+}
+
 void network_init()
 {
 	int ret;
@@ -94,6 +105,7 @@ void network_init()
 		socketsOpenWithoutError = false;
 		printf("socInit: 0x%08X\n", (unsigned int)ret);
 	}
+
 }
 
 void network_exit()
@@ -159,6 +171,15 @@ responsePair network_request(std::string *address, std::string *jsonData, std::s
 			blob.len = sizeof(__lets_encrypt_rootca_pem);
 			blob.flags = CURL_BLOB_COPY;
 			curl_easy_setopt(curl, CURLOPT_CAINFO_BLOB, &blob);
+
+			if (!valid_certificate())
+			{
+				curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+			}
+			else
+			{
+				curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+			}
 
 			curl_easy_setopt(curl, CURLOPT_URL, (*address).c_str());
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "Citrahold 3DS Client (libcurl)/1.0");

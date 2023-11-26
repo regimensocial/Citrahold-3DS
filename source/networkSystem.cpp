@@ -18,12 +18,16 @@ NetworkSystem::NetworkSystem()
 
 	network_init();
 
-	sendRequest(this->serverAddress + "/areyouawake");
 }
 
 responsePair NetworkSystem::init(std::string serverAddress, std::string token)
 {
 	this->serverAddress = serverAddress;
+
+	if (!valid_certificate())
+	{
+		printf("\nWARNING: The TLS certificate is going to be/is expired (soon). Please update your build!\nWe will not verify the certificate, this could be insecure!\n");
+	}
 
 	return sendRequest(this->serverAddress + "/areyouawake");
 }
@@ -50,6 +54,36 @@ std::string NetworkSystem::getBase64StringFromFile(std::string fullFilePath, std
 		return base64_encode(&buffer[0], buffer.size());
 	}
 	return "";
+}
+
+void NetworkSystem::checkVersion(std::string currentVersion)
+{
+	std::cout << "\nChecking for updates...";
+
+	responsePair response = sendRequest(this->serverAddress + ("/softwareVersion"));
+	nlohmann::json responseJSON = nlohmann::json::parse(response.second);
+	nlohmann::json::array_t responseArray = responseJSON["3ds"];
+
+	bool found = false;
+	for (const auto &element : responseArray)
+	{
+		if (element == currentVersion)
+		{
+			found = true;
+			break;
+		}
+	}
+
+	std::cout << "\r                                   \r";
+	if (found)
+	{
+		std::cout << "You are running the latest version!\n";
+	}
+	else
+	{
+		std::cout << "There is an update available (" << responseJSON["3ds"][0].dump() << ")\n";
+		std::cout << "Please visit the website for help.\n";
+	}
 }
 
 bool NetworkSystem::download(UploadTypeEnum type, std::string gameID, std::filesystem::path gamePath)
@@ -181,7 +215,7 @@ std::string NetworkSystem::getTokenFromShorthandToken(std::string shorthandToken
 
 std::string NetworkSystem::verifyTokenToSetUserID(std::string fullToken)
 {
-	
+
 	nlohmann::json data;
 
 	data["token"] = fullToken;

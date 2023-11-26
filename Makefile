@@ -69,8 +69,8 @@ PRODUCT_CODE	:=	CTR-HB-CTHD
 ICON_FLAGS          :=	nosavebackups,visible
 
 VERSION_MAJOR := 1
-VERSION_MINOR := 0
-VERSION_MICRO := 3
+VERSION_MINOR := 1
+VERSION_MICRO := 0
 
 #---------------------------------------------------------------------------------
 # options for code generation

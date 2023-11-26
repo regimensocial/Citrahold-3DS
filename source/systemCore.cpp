@@ -1,7 +1,9 @@
-#include "systemCore.h"
 #include <3ds.h>
 #include <citro2d.h>
 #include <sstream>
+#include <regex>
+
+#include "systemCore.h"
 #include "menuSystem.h"
 #include "menus.h"
 #include "networkSystem.h"
@@ -9,7 +11,6 @@
 #include "directoryMenu.h"
 #include "json.hpp"
 #include "helpers.h"
-#include <regex>
 #include "base64.h"
 
 #ifndef VERSION_MAJOR
@@ -30,17 +31,19 @@ SystemCore::SystemCore() : networkSystem()
 
     consoleInit(GFX_BOTTOM, NULL);
 
-    std::cout << "\n- - - - - - - - - - - - - - - - -\n\nWelcome to Citrahold." << std::endl;
-    std::cout << "Press START at any point to exit.\n\nPlease use the D-pad to navigate, \nand use A to confirm actions.\n\nYou can ignore this console for \nmost intents and purposes.\n\n- - - - - - - - - - - - - - - - -"
+    std::cout << "\n- - - - - - - - - - - - - - - - -\n\nWelcome to Citrahold "
+              << "v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_MICRO << std::endl;
+    std::cout << "\nFor more information, please visit\n>> https://www.citrahold.com/ <<" << std::endl;
+    std::cout << "\nPress START at any point to exit.\n\nPlease use the D-pad to navigate, \nand use A to confirm actions.\n\nPlease also use B to go back from\na menu.\n\n- - - - - - - - - - - - - - - - -"
               << std::endl;
 
     configManager = ConfigManager();
 
     checkServerConnection();
 
-    if (isServerAccessible && configManager.loggedIn())
+    if (isServerAccessible)
     {
-        std::cout << "Game saves on server: " << networkSystem.getGamesMenuItems(UploadTypeEnum::SAVES).size() << std::endl;
+        networkSystem.checkVersion("v" + std::to_string(VERSION_MAJOR) + "." + std::to_string(VERSION_MINOR) + "." + std::to_string(VERSION_MICRO));
     }
 
     menuSystem = MenuSystem();
@@ -65,14 +68,13 @@ SystemCore::SystemCore() : networkSystem()
 
 void SystemCore::checkServerConnection()
 {
-    std::cout << "\nGetting server status...\nThis should be (fairly) INSTANT!\n"
-              << std::endl;
-    responsePair serverStatus = networkSystem.init(configManager.getConfig()["serverAddress"], configManager.getToken());
-    std::cout << "Reported server status: HTTP " << serverStatus.first << std::endl;
+    std::cout << "\nGetting server status...";
 
-    // at some point, we should check if they're connected to the internet???
-    std::cout << "This is " << (serverStatus.first == 200 ? "OK" : "NOT OK\nTHIS MAKES NO SENSE AT ALL") << std::endl
-              << std::endl;
+    responsePair serverStatus = networkSystem.init(configManager.getConfig()["serverAddress"], configManager.getToken());
+
+    std::cout << "\r                                   \r";
+
+    std::cout << (serverStatus.first == 200 ? "Connected to Citrahold Server!" : "Server inaccessible.\nThis is NOT OK.") << "\n";
 
     isServerAccessible = (serverStatus.first == 200);
 
@@ -84,23 +86,20 @@ void SystemCore::checkServerConnection()
             if (userID != "invalid")
             {
                 networkSystem.loggedIn = true;
-                std::cout << "Successfully authenticated as user\n"
+                std::cout << "\nSuccessfully authenticated as user\n"
                           << userID << std::endl;
             }
             else
             {
                 networkSystem.loggedIn = false;
-                std::cout << "Invalid token currently saved." << std::endl;
+                std::cout << "\nInvalid token currently saved." << std::endl;
             }
         }
         else
         {
-            std::cout << "Please go to Settings and input\na shorthand token!" << std::endl;
+            std::cout << "\nPlease go to Settings and input\na shorthand token!" << std::endl;
         }
     }
-
-    std::cout << std::endl
-              << "You're using Citrahold-3DS v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_MICRO << std::endl;
 }
 
 void SystemCore::handleFunction(menuFunctions function, unsigned int key)
@@ -230,6 +229,7 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                     configManager.addGameIDToFile(uploadType, gameID, directoryMenu.getCurrentDirectory());
 
                     handleFunction(menuFunctions::specialX_exitDirectorySelection);
+                    std::cout << "Game ID \"" << gameID << "\" added to " << ((uploadType == UploadTypeEnum::SAVES) ? "saves" : "extdata") << " file" << std::endl;
 
                     currentGameID = "";
                 }
@@ -318,6 +318,7 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
             if (token != "")
             {
+                std::cout << "Verifying token..." << std::endl;
                 if (token.length() > 6)
                 {
                     // FULL TOKEN
@@ -327,10 +328,11 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                         configManager.userID = userID;
                         configManager.setToken(token);
                         std::cout << "Successfully authenticated as user" << userID << std::endl;
+                        networkSystem.loggedIn = true;
                     }
                     else
                     {
-                        std::cout << "User inputted invalid token" << std::endl;
+                        std::cout << "Invalid token" << std::endl;
                     }
                 }
                 else
@@ -346,11 +348,12 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
                             configManager.setToken(fullToken);
                             std::cout << "Successfully authenticated as user\n"
                                       << userID << std::endl;
+                            networkSystem.loggedIn = true;
                         }
                     }
                     else
                     {
-                        std::cout << "User inputted invalid token" << std::endl;
+                        std::cout << "Invalid token" << std::endl;
                     }
                 }
             }
@@ -431,6 +434,12 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
         case menuFunctions::saveSelectionMenuItems:
         {
+            if (!networkSystem.loggedIn)
+            {
+                std::cout << "Not logged in" << std::endl;
+                break;
+            }
+
             nlohmann::json gameIDJSON = configManager.getGameIDFile(currentUploadType);
             currentGameID = std::get<0>(gameIDMenuItems[selection]);
             std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
@@ -446,6 +455,11 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
         case menuFunctions::uploadGame:
         {
+            if (!networkSystem.loggedIn)
+            {
+                std::cout << "Not logged in" << std::endl;
+                break;
+            }
 
             nlohmann::json gameIDJSON = configManager.getGameIDFile(currentUploadType);
             std::filesystem::path gamePath = directoryMenu.getGamePathFromGameID(currentGameID, gameIDJSON);
@@ -594,6 +608,12 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
         case menuFunctions::downloadSavesMenuItems:
         {
+            if (!networkSystem.loggedIn)
+            {
+                std::cout << "Not logged in" << std::endl;
+                break;
+            }
+
             currentUploadType = UploadTypeEnum::SAVES;
             downloadGameMenuItems = networkSystem.getGamesMenuItems(UploadTypeEnum::SAVES);
             if (downloadGameMenuItems.size() == 0)
@@ -608,6 +628,12 @@ void SystemCore::handleFunction(menuFunctions function, unsigned int key)
 
         case menuFunctions::downloadExtdataMenuItems:
         {
+            if (!networkSystem.loggedIn)
+            {
+                std::cout << "Not logged in" << std::endl;
+                break;
+            }
+
             currentUploadType = UploadTypeEnum::EXTDATA;
             downloadGameMenuItems = networkSystem.getGamesMenuItems(UploadTypeEnum::EXTDATA);
             if (downloadGameMenuItems.size() == 0)
@@ -723,20 +749,23 @@ void SystemCore::handleInput()
         dontUseVolumeBar ? std::cout << "Use left and right shoulder to zoom." << std::endl : std::cout << "Use volume bar to zoom." << std::endl;
     }
 
-    if (kHeld & KEY_L)
+    if (dontUseVolumeBar)
     {
-        zoom++;
-        if (zoom > 63)
+        if ((kHeld & KEY_L))
         {
-            zoom = 63;
+            zoom++;
+            if (zoom > 63)
+            {
+                zoom = 63;
+            }
         }
-    }
-    else if (kHeld & KEY_R)
-    {
-        zoom--;
-        if (zoom < 0)
+        else if (kHeld & KEY_R)
         {
-            zoom = 0;
+            zoom--;
+            if (zoom < 0)
+            {
+                zoom = 0;
+            }
         }
     }
 
