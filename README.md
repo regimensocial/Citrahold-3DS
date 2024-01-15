@@ -5,4 +5,8 @@ Citrahold is a 3DS Homebrew App, a piece of software, and a web service which al
 
 **If you want to get started early, [check out the website](http://citrahold.com/)!**
 
+I am in the process of adding local transfer.
+
+Also it would be an interesting idea to potentially make a Nintendo Switch port, but I do not currently have a hacked Switch.
+
 Proper README coming soon!
