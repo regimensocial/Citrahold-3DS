@@ -1,12 +1,14 @@
 # Citrahold-3DS
 Citrahold is a 3DS Homebrew App, a piece of software, and a web service which allows you to easily sync your saves between 3DSes and Emulators.
 
-**Citrahold is yet to fully launch! It should be ready in just a few days, please check back soon! I am currently waiting for it to be added to Universal Updater before doing a full launch, but it is fully usable now.**  
+**Get started, [check out the website](http://citrahold.com/)!**
 
-**If you want to get started early, [check out the website](http://citrahold.com/)!**
+**[Video Demo / Tutorial](https://www.youtube.com/watch?v=MsqyN6I3RAM)**
 
-I am in the process of adding local transfer.
+For **developers** curious about the other repos which make this work (they don't get nearly as much attraction so I thought I'd link them):
+- [Citrahold-PC](https://github.com/regimensocial/citraholdUI)
+- [Citrahold-Server](https://github.com/regimensocial/Citrahold-Server)
 
-Also it would be an interesting idea to potentially make a Nintendo Switch port, but I do not currently have a hacked Switch.
+I stopped actively working on Citrahold after January, but a lot more people have started using it so I may begin working on it again. It is still stable though!
 
-Proper README coming soon!
+I'm still yet to promote it anywhere, so not sure how you're all finding it but it's very cool!
