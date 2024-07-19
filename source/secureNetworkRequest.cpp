@@ -127,9 +127,13 @@ responsePair network_request(std::string *address, std::string *jsonData, std::s
 	CURL *curl;
 	CURLcode res;
 
-	if (DEBUG)
-		printf("curl init\n");
+	if (DEBUG) {
 
+		printf("curl init\n");
+		printf(address->c_str());
+		printf("\n");
+
+	}
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	curl = curl_easy_init();
@@ -214,12 +218,11 @@ responsePair network_request(std::string *address, std::string *jsonData, std::s
 					printf("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
 					printf("\n");
 					printf(address->c_str());
+					printf("\n");
 				}
 			}
-			else
-			{
-				curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpStatusCode);
-			}
+			
+			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpStatusCode);
 
 			curl_slist_free_all(headers);
 

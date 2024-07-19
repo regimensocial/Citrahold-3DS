@@ -74,7 +74,7 @@ void SystemCore::checkServerConnection()
 
     std::cout << "\r                                   \r";
 
-    std::cout << (serverStatus.first == 200 ? "Connected to Citrahold Server!" : "Server inaccessible.\nThis is NOT OK.") << "\n";
+    std::cout << (serverStatus.first == 200 ? "Connected to Citrahold Server!" : "Server inaccessible.\nThis is NOT OK.\nIf this persists, please check the\nwebsite for a new build.") << "\n";
 
     isServerAccessible = (serverStatus.first == 200);
 

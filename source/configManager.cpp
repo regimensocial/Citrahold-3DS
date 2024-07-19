@@ -68,8 +68,7 @@ ConfigManager::ConfigManager()
         {
             updateConfigFile(config);
         }
-    
-    }
+        }
 
     configDirectory = directoryPath;
 
