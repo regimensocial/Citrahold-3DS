@@ -91,7 +91,7 @@ void NetworkSystem::checkVersion(std::string currentVersion)
 
 	if (responseJSON.contains("motd")) {
 		for (const auto &element : responseJSON["motd"]) {
-			std::cout << element << "\n";
+			std::cout << element.get<std::string>() << "\n";
 		}
 	}
 }
