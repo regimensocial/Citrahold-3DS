@@ -20,6 +20,7 @@ public:
     void handleInput();
 
     std::string openKeyboard(std::string placeholder = "", std::string initialText = "");
+    std::string getVersion();
 
     void sceneRender();
     void cleanExit();

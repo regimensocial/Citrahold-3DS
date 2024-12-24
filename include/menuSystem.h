@@ -20,7 +20,7 @@ public:
     void goToPreviousMenu(int &selection, menuItems *&currentMenuItems, std::vector<menuItems *> &previousMenus);
     void handleExit();
     
-    std::string getMenuString(menuItems &items);
+    std::string getMenuString(menuItems &items, bool directoryMenu);
     C2D_TextBuf* getMenuTextBuf();
     C2D_Text* getMenuText();
     menuItems* getCurrentMenuItems();

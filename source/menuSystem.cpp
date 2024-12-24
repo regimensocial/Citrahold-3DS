@@ -40,11 +40,19 @@ C2D_Text *MenuSystem::getMenuText()
 	return &this->menuText;
 }
 
-std::string MenuSystem::getMenuString(menuItems &items)
+std::string MenuSystem::getMenuString(menuItems &items, bool normalMenu)
 {
+
 	std::string str = "";
-	for (auto &item : items)
-		str += std::get<0>(item) + "\n";
+
+	if (normalMenu) {
+		for (auto &item : items)
+			str += std::get<0>(item) + "\n";
+	} else {
+		str = std::to_string(items.size() - 1) + " directories here";
+	}
+
+	
 
 	return str;
 }
@@ -94,7 +102,7 @@ void MenuSystem::changeMenu(int &selection, menuItems *&oldMenuItems, menuItems 
 		headerSpaceString += "\n";
 	}
 
-	C2D_TextParse(&this->menuText, this->menuTextBuf, (headerSpaceString + getMenuString(newMenuItems)).c_str());
+	C2D_TextParse(&this->menuText, this->menuTextBuf, (headerSpaceString + getMenuString(newMenuItems, &newMenuItems != &uploadDirectoryMenuItems)).c_str());
 	C2D_TextOptimize(&this->menuText);
 
 	selection = 0;

@@ -70,7 +70,7 @@ ICON_FLAGS          :=	nosavebackups,visible
 
 VERSION_MAJOR := 1
 VERSION_MINOR := 1
-VERSION_MICRO := 1
+VERSION_MICRO := 2
 
 #---------------------------------------------------------------------------------
 # options for code generation

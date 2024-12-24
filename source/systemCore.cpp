@@ -44,6 +44,16 @@ SystemCore::SystemCore() : networkSystem()
     if (isServerAccessible)
     {
         networkSystem.checkVersion("v" + std::to_string(VERSION_MAJOR) + "." + std::to_string(VERSION_MINOR) + "." + std::to_string(VERSION_MICRO));
+    } else {
+
+        std::cout << "\nRetrying connection once.";
+        
+        checkServerConnection();
+        if (isServerAccessible)
+        {
+            networkSystem.checkVersion("v" + std::to_string(VERSION_MAJOR) + "." + std::to_string(VERSION_MINOR) + "." + std::to_string(VERSION_MICRO));
+        }
+
     }
 
     menuSystem = MenuSystem();
@@ -838,19 +848,26 @@ void SystemCore::sceneRender()
 
     C2D_Text dynText;
 
-    if (selection > 0)
+    if (menuSystem.getCurrentMenuItems() != &uploadDirectoryMenuItems)
     {
-        for (int i = 0; i < selection; i++)
+
+        if (selection > 0)
+        {
+            for (int i = 0; i < selection; i++)
+            {
+                str += "\n";
+            }
+        }
+
+        str += pointerSymbol;
+
+    
+        for (size_t i = 0; i < ((renderMenuItems).size() - selection); i++)
         {
             str += "\n";
         }
-    }
-
-    str += pointerSymbol;
-
-    for (size_t i = 0; i < ((renderMenuItems).size() - selection); i++)
-    {
-        str += "\n";
+    } else {
+        str += "\n\n";
     }
 
     if (selection > (int)(renderMenuItems).size() - 1)
@@ -868,7 +885,14 @@ void SystemCore::sceneRender()
     if (menuSystem.getCurrentMenuItems() == &uploadDirectoryMenuItems)
     {
         std::stringstream ss;
-        ss << ((selection == 0) ? "/" : "") << " Prev Directory    " + (selection == 0 ? "" : " Open " + std::get<0>((renderMenuItems)[selection])) + "\n Cancel     Confirm " + std::string(directoryMenu.getCurrentDirectory());
+
+        std::string confirm = " Confirm " + std::string(directoryMenu.getCurrentDirectory()) + "\n\n";
+        std::string cancel = " Cancel\n";
+        std::string prevDir = ((selection == 0) ? "/ Prev Directory\n" : " Prev Directory\n");
+
+        //  " (" + std::to_string(selection) + "/" + std::to_string(renderMenuItems.size() - 1) + ")" 
+
+        ss << (selection == 0 ? "Please press DOWN or UP" : " Open " + std::to_string(selection) + ". " + std::get<0>((renderMenuItems)[selection])) + "\n" << confirm << prevDir << cancel;
         str += ss.str();
     }
     else if (menuSystem.getFooter(currentMenuItems) != nullptr)
@@ -950,6 +974,11 @@ std::string SystemCore::openKeyboard(std::string placeholder, std::string initia
 bool SystemCore::isHalted()
 {
     return halt;
+}
+
+std::string SystemCore::getVersion()
+{
+    return "v" + std::to_string(VERSION_MAJOR) + "." + std::to_string(VERSION_MINOR) + "." + std::to_string(VERSION_MICRO);
 }
 
 void SystemCore::cleanExit()
