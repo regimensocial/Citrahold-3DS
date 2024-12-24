@@ -10,6 +10,4 @@ For **developers** curious about the other repos which make this work (they don'
 - [Citrahold-PC](https://github.com/regimensocial/citraholdUI)
 - [Citrahold-Server](https://github.com/regimensocial/Citrahold-Server)
 
-I stopped actively working on Citrahold after January, but a lot more people have started using it so I may begin working on it again. It is still stable though!
-
-I'm still yet to promote it anywhere, so not sure how you're all finding it but it's very cool!
+I have future plans for Citrahold in 2025
